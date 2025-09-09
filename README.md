@@ -4,5 +4,5 @@ e3oT.jsは読み込み用のjavascriptファイル（本体。これをそのま
 samplefps.sb3は作品例（銃のゲームです。実際にe3oTを使用しているので、ぜひご覧ください。）
 となっています。
 
-↓youtubeにプロモーション動画をあげていますので、ぜひご覧ください。
+youtubeにプロモーション動画をあげていますので、ぜひご覧ください。
 https://www.youtube.com/watch?v=nJwdLDV-Rmg
