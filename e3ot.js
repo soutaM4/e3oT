@@ -6,42 +6,67 @@
       this.scene = null;
       this.camera = null;
       this.renderer = null;
-      this.objects = [];
+      this.objects = new Map();
+      this.nextObjectId = 1;
       this.isInitialized = false;
       this.container = null;
       this.positionUpdateInterval = null;
       this.stageElement = null;
       this.stageCanvas = null;
-      this.spriteLayer = null;
       this.compositeCanvas = null;
       this.compositeContext = null;
-      this.adjustmentX = 1;
-      this.adjustmentY = 1;
-      this.isFullscreen = false;
-      this.spriteDepthMode = 'front';
-      this.renderOrder = 'background-3d-sprites';
+      this.renderOrder = 'overlay'; // TurboWarpでは単純なオーバーレイ方式
       this.currentBlendMode = 'source-over';
       this.current3DOpacity = 0.9;
-      this.lights = [];
+      this.lights = new Map();
+      this.nextLightId = 1;
       this.animationId = null;
+      this.threeJSLoaded = false;
+      this.initPromise = null;
+      this.zIndexMode = 'auto'; // z-index制御モード
+      this.enable3D = true;
       
       this.loadThreeJS();
     }
 
-    loadThreeJS() {
+    async loadThreeJS() {
       if (typeof THREE !== 'undefined') {
-        return;
+        this.threeJSLoaded = true;
+        return Promise.resolve();
       }
       
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-      script.onload = () => {
-        console.log('Three.js loaded successfully');
-      };
-      script.onerror = () => {
-        console.error('Failed to load Three.js');
-      };
-      document.head.appendChild(script);
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+        script.onload = () => {
+          console.log('Three.js loaded successfully');
+          this.threeJSLoaded = true;
+          resolve();
+        };
+        script.onerror = () => {
+          console.error('Failed to load Three.js');
+          reject(new Error('Three.js failed to load'));
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    async waitForThreeJS() {
+      if (this.threeJSLoaded) return;
+      
+      let attempts = 0;
+      while (!this.threeJSLoaded && attempts < 100) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+        if (typeof THREE !== 'undefined') {
+          this.threeJSLoaded = true;
+          break;
+        }
+      }
+      
+      if (!this.threeJSLoaded) {
+        throw new Error('Three.js loading timeout');
+      }
     }
 
     getInfo() {
@@ -372,14 +397,14 @@
           },
           '---',
           {
-            opcode: 'setRenderOrder',
+            opcode: 'set3DDepth',
             blockType: Scratch.BlockType.COMMAND,
-            text: '描画順序を [ORDER] にする',
+            text: '3Dの表示位置を [DEPTH] にする',
             arguments: {
-              ORDER: {
+              DEPTH: {
                 type: Scratch.ArgumentType.STRING,
-                menu: 'renderOrders',
-                defaultValue: 'background-3d-sprites'
+                menu: 'depthModes',
+                defaultValue: 'front'
               }
             }
           },
@@ -397,12 +422,24 @@
           {
             opcode: 'setBlendMode',
             blockType: Scratch.BlockType.COMMAND,
-            text: '合成モードを [MODE] にする',
+            text: '3Dの合成モードを [MODE] にする',
             arguments: {
               MODE: {
                 type: Scratch.ArgumentType.STRING,
                 menu: 'blendModes',
                 defaultValue: 'normal'
+              }
+            }
+          },
+          {
+            opcode: 'enable3DRendering',
+            blockType: Scratch.BlockType.COMMAND,
+            text: '3D描画を [ENABLE] にする',
+            arguments: {
+              ENABLE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: 'enableOptions',
+                defaultValue: 'on'
               }
             }
           },
@@ -434,7 +471,7 @@
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
-                defaultValue: 1
+                defaultValue: 3
               },
               X: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -455,6 +492,11 @@
             opcode: 'getObjectCount',
             blockType: Scratch.BlockType.REPORTER,
             text: 'オブジェクト数'
+          },
+          {
+            opcode: 'getLastObjectId',
+            blockType: Scratch.BlockType.REPORTER,
+            text: '最後に作成したオブジェクトのID'
           },
           {
             opcode: 'getObjectPosition',
@@ -502,19 +544,18 @@
           }
         ],
         menus: {
-          renderOrders: {
+          depthModes: {
             acceptReporters: false,
             items: [
-              { text: '背景→3D→スプライト', value: 'background-3d-sprites' },
-              { text: '背景→スプライト→3D', value: 'background-sprites-3d' },
-              { text: 'スプライト→背景→3D', value: 'sprites-background-3d' },
-              { text: 'スプライト→3D→背景', value: 'sprites-3d-background' }
+              { text: '最前面', value: 'front' },
+              { text: '最背面', value: 'back' },
+              { text: 'スプライトの後ろ', value: 'behind' }
             ]
           },
           blendModes: {
             acceptReporters: false,
             items: [
-              { text: '通常', value: 'source-over' },
+              { text: '通常', value: 'normal' },
               { text: '乗算', value: 'multiply' },
               { text: 'スクリーン', value: 'screen' },
               { text: 'オーバーレイ', value: 'overlay' },
@@ -522,6 +563,13 @@
               { text: 'ハードライト', value: 'hard-light' },
               { text: '差', value: 'difference' },
               { text: '除外', value: 'exclusion' }
+            ]
+          },
+          enableOptions: {
+            acceptReporters: false,
+            items: [
+              { text: 'オン', value: 'on' },
+              { text: 'オフ', value: 'off' }
             ]
           },
           lightTypes: {
@@ -544,18 +592,23 @@
       };
     }
 
-    init() {
+    async init() {
       if (this.isInitialized) {
         return;
       }
-      
-      if (typeof THREE === 'undefined') {
-        console.error('Three.js is not loaded yet');
-        setTimeout(() => this.init(), 100);
-        return;
+
+      if (this.initPromise) {
+        return this.initPromise;
       }
       
+      this.initPromise = this._doInit();
+      return this.initPromise;
+    }
+
+    async _doInit() {
       try {
+        await this.waitForThreeJS();
+        
         // シーン作成
         this.scene = new THREE.Scene();
         
@@ -576,95 +629,90 @@
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
         // デフォルトライト追加
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(1, 1, 1);
-        light.castShadow = true;
-        this.scene.add(light);
-        this.lights.push(light);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(1, 1, 1);
+        directionalLight.castShadow = true;
+        this.scene.add(directionalLight);
+        this.lights.set(1, directionalLight);
         
         const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
         this.scene.add(ambientLight);
-        this.lights.push(ambientLight);
+        this.lights.set(2, ambientLight);
+        this.nextLightId = 3;
         
         this.isInitialized = true;
         
-        // ステージ監視を開始
-        this.startStageMonitoring();
-        this.setupCompositing();
+        // TurboWarp用の簡単なオーバーレイ設定
+        this.setupSimpleOverlay();
         this.animate();
         
         console.log('3D extension initialized successfully');
       } catch (error) {
         console.error('3D initialization error:', error);
+        this.initPromise = null;
+        throw error;
       }
     }
 
-    setupCompositing() {
-      setTimeout(() => {
-        this.findStageCanvas();
-        if (this.stageCanvas) {
-          this.setupCanvasComposition();
+    setupSimpleOverlay() {
+      // TurboWarpでは複雑な合成は避けて、シンプルなオーバーレイを使用
+      this.findStageElement();
+      
+      this.container = document.createElement('div');
+      this.container.style.position = 'absolute';
+      this.container.style.top = '0';
+      this.container.style.left = '0';
+      this.container.style.width = '100%';
+      this.container.style.height = '100%';
+      this.container.style.pointerEvents = 'none';
+      this.container.style.zIndex = '10'; // デフォルトは前面
+      
+      this.container.appendChild(this.renderer.domElement);
+      
+      if (this.stageElement) {
+        // ステージ要素の親に追加
+        const parent = this.stageElement.parentElement || this.stageElement.parentNode;
+        if (parent) {
+          parent.style.position = 'relative'; // 相対位置指定を確保
+          parent.appendChild(this.container);
         } else {
-          this.setupOverlayMode();
+          document.body.appendChild(this.container);
         }
-      }, 1000);
+      } else {
+        document.body.appendChild(this.container);
+      }
+      
+      // サイズと位置の更新を開始
+      this.startPositionMonitoring();
+      
+      console.log('Simple overlay setup complete');
     }
 
-    findStageCanvas() {
+    findStageElement() {
       const selectors = [
         'canvas',
-        '.stage canvas',
-        'div[class*="stage"] canvas',
-        'div[class*="Stage"] canvas'
+        '.stage',
+        'div[class*="stage"]',
+        'div[class*="Stage"]',
+        '#app canvas',
+        '.renderer canvas'
       ];
       
       for (const selector of selectors) {
-        const canvas = document.querySelector(selector);
-        if (canvas && canvas.width >= 300 && canvas.height >= 200) {
-          this.stageCanvas = canvas;
-          this.stageElement = canvas.parentElement;
-          console.log('Stage canvas found');
+        const element = document.querySelector(selector);
+        if (element) {
+          this.stageElement = element;
+          console.log('Stage element found:', selector);
           return true;
         }
       }
+      
+      console.warn('Stage element not found, using document.body');
+      this.stageElement = document.body;
       return false;
     }
 
-    setupCanvasComposition() {
-      if (!this.stageCanvas) return;
-      
-      try {
-        // 合成用キャンバス作成
-        this.compositeCanvas = document.createElement('canvas');
-        this.compositeContext = this.compositeCanvas.getContext('2d');
-        
-        // スタイルコピー
-        this.compositeCanvas.style.cssText = this.stageCanvas.style.cssText;
-        this.compositeCanvas.className = this.stageCanvas.className;
-        
-        // 置き換え
-        this.stageCanvas.parentNode.insertBefore(this.compositeCanvas, this.stageCanvas);
-        this.stageCanvas.style.display = 'none';
-        this.renderer.domElement.style.display = 'none';
-        
-        console.log('Canvas composition setup complete');
-      } catch (error) {
-        console.error('Canvas composition error:', error);
-        this.setupOverlayMode();
-      }
-    }
-
-    setupOverlayMode() {
-      this.container = document.createElement('div');
-      this.container.style.position = 'fixed';
-      this.container.style.zIndex = '9999';
-      this.container.style.pointerEvents = 'none';
-      this.container.appendChild(this.renderer.domElement);
-      document.body.appendChild(this.container);
-      console.log('Overlay mode setup complete');
-    }
-
-    startStageMonitoring() {
+    startPositionMonitoring() {
       this.positionUpdateInterval = setInterval(() => {
         this.updateSizeAndPosition();
       }, 100);
@@ -673,101 +721,139 @@
     }
 
     updateSizeAndPosition() {
-      if (!this.renderer || !this.camera) return;
+      if (!this.renderer || !this.camera || !this.container) return;
       
-      if (this.compositeCanvas && this.stageCanvas) {
-        const width = this.stageCanvas.width;
-        const height = this.stageCanvas.height;
+      if (this.stageCanvas) {
+        const rect = this.stageCanvas.getBoundingClientRect();
+        const width = this.stageCanvas.width || rect.width || 480;
+        const height = this.stageCanvas.height || rect.height || 360;
         
-        this.compositeCanvas.width = width;
-        this.compositeCanvas.height = height;
+        // 3Dキャンバスのサイズ更新
         this.renderer.setSize(width, height);
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
         
-      } else if (this.container && this.stageElement) {
-        const rect = this.stageElement.getBoundingClientRect();
-        const width = rect.width;
-        const height = rect.height;
-        
+        // コンテナのサイズ更新
         this.container.style.width = width + 'px';
         this.container.style.height = height + 'px';
-        this.renderer.setSize(width, height);
-        this.camera.aspect = width / height;
-        this.camera.updateProjectionMatrix();
         
-        this.container.style.left = (rect.left + window.scrollX) + 'px';
-        this.container.style.top = (rect.top + window.scrollY) + 'px';
+        // ステージキャンバスの親要素内での位置調整
+        const stageParent = this.stageCanvas.parentElement;
+        if (stageParent && this.container.parentElement === stageParent) {
+          // 同一親要素内なので、相対位置で良い
+          this.container.style.position = 'absolute';
+          this.container.style.top = '0';
+          this.container.style.left = '0';
+        } else {
+          // 異なる親要素の場合は絶対位置で調整
+          this.container.style.position = 'fixed';
+          this.container.style.top = (rect.top + window.scrollY) + 'px';
+          this.container.style.left = (rect.left + window.scrollX) + 'px';
+        }
+      } else {
+        // フォールバック：デフォルトサイズ
+        this.renderer.setSize(480, 360);
+        this.camera.aspect = 480 / 360;
+        this.camera.updateProjectionMatrix();
+        this.container.style.width = '480px';
+        this.container.style.height = '360px';
       }
     }
 
     animate() {
-      if (!this.isInitialized) return;
+      if (!this.isInitialized || !this.enable3D) return;
       
       this.animationId = requestAnimationFrame(() => this.animate());
       
-      if (this.compositeCanvas && this.stageCanvas) {
-        this.compositeStageAnd3D();
+      // カスタム合成が有効な場合
+      if (this.startCustomComposition && this.replacementCanvas) {
+        this.performCustomComposition();
       }
       
+      // 通常のレンダリング
       this.renderer.render(this.scene, this.camera);
     }
 
-    compositeStageAnd3D() {
-      if (!this.compositeContext || !this.stageCanvas) return;
+    performCustomComposition() {
+      if (!this.replacementContext || !this.stageCanvas) return;
+      
+      try {
+        const width = this.replacementCanvas.width;
+        const height = this.replacementCanvas.height;
+        
+        // 合成キャンバスをクリア
+        this.replacementContext.clearRect(0, 0, width, height);
+        
+        // 1. 3Dを先に描画（背景）
+        this.replacementContext.drawImage(this.renderer.domElement, 0, 0, width, height);
+        
+        // 2. Scratchステージを上に重ねて描画
+        this.replacementContext.globalCompositeOperation = 'source-over';
+        
+        // ステージキャンバスから画像データを取得
+        try {
+          // 一時的にステージキャンバスを表示
+          this.stageCanvas.style.visibility = 'visible';
+          
+          // 少し遅延してからキャプチャ
+          setTimeout(() => {
+            if (this.replacementContext && this.stageCanvas) {
+              this.replacementContext.drawImage(this.stageCanvas, 0, 0, width, height);
+              this.stageCanvas.style.visibility = 'hidden';
+            }
+          }, 16); // 1フレーム分の遅延
+          
+        } catch (error) {
+          // エラーは無視して続行
+        }
+        
+        this.replacementContext.globalCompositeOperation = 'source-over';
+        
+      } catch (error) {
+        console.warn('Custom composition error:', error);
+      }
+    }
+
+    renderComposite() {
+      if (!this.compositeCanvas || !this.compositeContext || !this.stageCanvas) {
+        return;
+      }
       
       try {
         const width = this.compositeCanvas.width;
         const height = this.compositeCanvas.height;
         
+        // 合成キャンバスをクリア
         this.compositeContext.clearRect(0, 0, width, height);
         
-        // 描画順序に応じた合成
-        switch (this.renderOrder) {
-          case 'background-3d-sprites':
-            this.compositeContext.drawImage(this.stageCanvas, 0, 0, width, height);
-            this.draw3D();
-            break;
-          case 'background-sprites-3d':
-            this.compositeContext.drawImage(this.stageCanvas, 0, 0, width, height);
-            this.draw3D();
-            break;
-          case 'sprites-background-3d':
-            this.draw3D();
-            this.compositeContext.globalCompositeOperation = 'source-over';
-            this.compositeContext.drawImage(this.stageCanvas, 0, 0, width, height);
-            break;
-          case 'sprites-3d-background':
-            this.draw3D();
-            this.compositeContext.globalCompositeOperation = 'source-over';
-            this.compositeContext.drawImage(this.stageCanvas, 0, 0, width, height);
-            break;
-          default:
-            this.compositeContext.drawImage(this.stageCanvas, 0, 0, width, height);
-            this.draw3D();
+        // 3Dシーンをレンダリング
+        this.renderer.render(this.scene, this.camera);
+        
+        if (this.compositeDepth === 'back') {
+          // 3D → Scratchの順序で描画（3Dが背景）
+          this.compositeContext.drawImage(this.renderer.domElement, 0, 0, width, height);
+          this.compositeContext.globalCompositeOperation = 'source-over';
+          this.compositeContext.drawImage(this.stageCanvas, 0, 0, width, height);
+          
+        } else if (this.compositeDepth === 'behind') {
+          // 3D → Scratchの順序で描画（3Dがスプライトの後ろ）
+          this.compositeContext.drawImage(this.renderer.domElement, 0, 0, width, height);
+          this.compositeContext.globalCompositeOperation = 'source-over';
+          this.compositeContext.globalAlpha = 0.95; // 少し透明にしてブレンド
+          this.compositeContext.drawImage(this.stageCanvas, 0, 0, width, height);
+          this.compositeContext.globalAlpha = 1.0;
         }
-      } catch (error) {
-        // エラーは無視
-      }
-    }
-
-    draw3D() {
-      if (this.renderer && this.renderer.domElement) {
-        this.compositeContext.globalCompositeOperation = this.currentBlendMode;
-        this.compositeContext.globalAlpha = this.current3DOpacity;
-        this.compositeContext.drawImage(
-          this.renderer.domElement, 
-          0, 0, 
-          this.compositeCanvas.width, 
-          this.compositeCanvas.height
-        );
+        
+        // 合成操作をリセット
         this.compositeContext.globalCompositeOperation = 'source-over';
-        this.compositeContext.globalAlpha = 1.0;
+        
+      } catch (error) {
+        console.warn('Composite rendering error:', error);
       }
     }
 
-    addCube(args) {
-      if (!this.isInitialized) this.init();
+    async addCube(args) {
+      await this.init();
       if (!this.isInitialized || typeof THREE === 'undefined') return;
       
       const size = Scratch.Cast.toNumber(args.SIZE);
@@ -784,11 +870,14 @@
       cube.receiveShadow = true;
       
       this.scene.add(cube);
-      this.objects.push(cube);
+      const id = this.nextObjectId++;
+      this.objects.set(id, cube);
+      
+      console.log(`立方体を追加しました (ID: ${id})`);
     }
 
-    addSphere(args) {
-      if (!this.isInitialized) this.init();
+    async addSphere(args) {
+      await this.init();
       if (!this.isInitialized || typeof THREE === 'undefined') return;
       
       const radius = Scratch.Cast.toNumber(args.RADIUS);
@@ -805,11 +894,14 @@
       sphere.receiveShadow = true;
       
       this.scene.add(sphere);
-      this.objects.push(sphere);
+      const id = this.nextObjectId++;
+      this.objects.set(id, sphere);
+      
+      console.log(`球体を追加しました (ID: ${id})`);
     }
 
-    addCylinder(args) {
-      if (!this.isInitialized) this.init();
+    async addCylinder(args) {
+      await this.init();
       if (!this.isInitialized || typeof THREE === 'undefined') return;
       
       const radius = Scratch.Cast.toNumber(args.RADIUS);
@@ -827,11 +919,14 @@
       cylinder.receiveShadow = true;
       
       this.scene.add(cylinder);
-      this.objects.push(cylinder);
+      const id = this.nextObjectId++;
+      this.objects.set(id, cylinder);
+      
+      console.log(`円柱を追加しました (ID: ${id})`);
     }
 
-    addPlane(args) {
-      if (!this.isInitialized) this.init();
+    async addPlane(args) {
+      await this.init();
       if (!this.isInitialized || typeof THREE === 'undefined') return;
       
       const width = Scratch.Cast.toNumber(args.WIDTH);
@@ -850,16 +945,19 @@
       plane.receiveShadow = true;
       
       this.scene.add(plane);
-      this.objects.push(plane);
+      const id = this.nextObjectId++;
+      this.objects.set(id, plane);
+      
+      console.log(`平面を追加しました (ID: ${id})`);
     }
 
     setObjectPosition(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return;
       
-      const obj = this.objects[id];
       obj.position.set(
         Scratch.Cast.toNumber(args.X),
         Scratch.Cast.toNumber(args.Y),
@@ -870,10 +968,10 @@
     moveObject(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return;
       
-      const obj = this.objects[id];
       obj.position.x += Scratch.Cast.toNumber(args.X);
       obj.position.y += Scratch.Cast.toNumber(args.Y);
       obj.position.z += Scratch.Cast.toNumber(args.Z);
@@ -882,10 +980,10 @@
     setObjectRotation(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return;
       
-      const obj = this.objects[id];
       obj.rotation.x = Scratch.Cast.toNumber(args.X) * (Math.PI/180);
       obj.rotation.y = Scratch.Cast.toNumber(args.Y) * (Math.PI/180);
       obj.rotation.z = Scratch.Cast.toNumber(args.Z) * (Math.PI/180);
@@ -894,10 +992,10 @@
     rotateObject(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return;
       
-      const obj = this.objects[id];
       obj.rotation.x += Scratch.Cast.toNumber(args.X) * (Math.PI/180);
       obj.rotation.y += Scratch.Cast.toNumber(args.Y) * (Math.PI/180);
       obj.rotation.z += Scratch.Cast.toNumber(args.Z) * (Math.PI/180);
@@ -906,10 +1004,10 @@
     setObjectScale(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return;
       
-      const obj = this.objects[id];
       obj.scale.set(
         Scratch.Cast.toNumber(args.X),
         Scratch.Cast.toNumber(args.Y),
@@ -920,10 +1018,10 @@
     setObjectColor(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return;
       
-      const obj = this.objects[id];
       const color = args.COLOR;
       obj.material.color.setHex(parseInt(color.slice(1), 16));
     }
@@ -931,10 +1029,10 @@
     setObjectOpacity(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return;
       
-      const obj = this.objects[id];
       const opacity = Math.max(0, Math.min(1, Scratch.Cast.toNumber(args.OPACITY)));
       obj.material.opacity = opacity;
       obj.material.transparent = opacity < 1;
@@ -943,18 +1041,19 @@
     removeObject(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return;
       
-      const obj = this.objects[id];
       this.scene.remove(obj);
       
       // ジオメトリとマテリアルを削除
       if (obj.geometry) obj.geometry.dispose();
       if (obj.material) obj.material.dispose();
       
-      // 配列から削除
-      this.objects.splice(id, 1);
+      // Mapから削除
+      this.objects.delete(id);
+      console.log(`オブジェクト ${id} を削除しました`);
     }
 
     setCameraPosition(args) {
@@ -965,7 +1064,6 @@
         Scratch.Cast.toNumber(args.Y),
         Scratch.Cast.toNumber(args.Z)
       );
-      this.camera.lookAt(0, 0, 0);
     }
 
     moveCamera(args) {
@@ -974,7 +1072,6 @@
       this.camera.position.x += Scratch.Cast.toNumber(args.X);
       this.camera.position.y += Scratch.Cast.toNumber(args.Y);
       this.camera.position.z += Scratch.Cast.toNumber(args.Z);
-      this.camera.lookAt(0, 0, 0);
     }
 
     setCameraRotation(args) {
@@ -988,10 +1085,10 @@
     lookAtObject(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return;
       
-      const obj = this.objects[id];
       this.camera.lookAt(obj.position);
     }
 
@@ -1005,17 +1102,43 @@
       );
     }
 
-    setRenderOrder(args) {
-      this.renderOrder = args.ORDER;
+    set3DDepth(args) {
+      const depth = args.DEPTH;
+      
+      if (!this.container) return;
+      
+      switch (depth) {
+        case 'front':
+          this.container.style.zIndex = '9999';
+          console.log('3Dを最前面に設定');
+          break;
+        case 'back':
+          this.container.style.zIndex = '1';
+          console.log('3Dを最背面に設定');
+          break;
+        case 'behind':
+          this.container.style.zIndex = '5';
+          console.log('3Dをスプライトの後ろに設定');
+          break;
+        default:
+          this.container.style.zIndex = '10';
+      }
     }
 
     set3DOpacity(args) {
-      this.current3DOpacity = Math.max(0, Math.min(1, Scratch.Cast.toNumber(args.OPACITY)));
+      const opacity = Math.max(0, Math.min(1, Scratch.Cast.toNumber(args.OPACITY)));
+      this.current3DOpacity = opacity;
+      
+      if (this.container) {
+        this.container.style.opacity = opacity.toString();
+      }
+      
+      console.log('3D透明度を設定:', opacity);
     }
 
     setBlendMode(args) {
       const modeMap = {
-        'normal': 'source-over',
+        'normal': 'normal',
         'multiply': 'multiply',
         'screen': 'screen',
         'overlay': 'overlay',
@@ -1025,11 +1148,35 @@
         'exclusion': 'exclusion'
       };
       
-      this.currentBlendMode = modeMap[args.MODE] || 'source-over';
+      const mode = modeMap[args.MODE] || 'normal';
+      this.currentBlendMode = mode;
+      
+      if (this.container) {
+        this.container.style.mixBlendMode = mode;
+      }
+      
+      console.log('合成モードを設定:', mode);
     }
 
-    addLight(args) {
-      if (!this.isInitialized) this.init();
+    enable3DRendering(args) {
+      const enable = args.ENABLE === 'on';
+      this.enable3D = enable;
+      
+      if (this.container) {
+        this.container.style.display = enable ? 'block' : 'none';
+      }
+      
+      if (enable && this.isInitialized) {
+        this.resume3D();
+      } else {
+        this.pause3D();
+      }
+      
+      console.log('3D描画:', enable ? 'オン' : 'オフ');
+    }
+
+    async addLight(args) {
+      await this.init();
       if (!this.isInitialized || typeof THREE === 'undefined') return;
       
       const type = args.TYPE;
@@ -1057,16 +1204,19 @@
       }
       
       this.scene.add(light);
-      this.lights.push(light);
+      const id = this.nextLightId++;
+      this.lights.set(id, light);
+      
+      console.log(`${type}ライトを追加しました (ID: ${id})`);
     }
 
     setLightPosition(args) {
       if (!this.isInitialized) return;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.lights[id] || !this.lights[id].position) return;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const light = this.lights.get(id);
+      if (!light || !light.position) return;
       
-      const light = this.lights[id];
       light.position.set(
         Scratch.Cast.toNumber(args.X),
         Scratch.Cast.toNumber(args.Y),
@@ -1075,16 +1225,20 @@
     }
 
     getObjectCount() {
-      return this.objects.length;
+      return this.objects.size;
+    }
+
+    getLastObjectId() {
+      return this.nextObjectId - 1;
     }
 
     getObjectPosition(args) {
       if (!this.isInitialized) return 0;
       
-      const id = Scratch.Cast.toNumber(args.ID) - 1;
-      if (!this.objects[id]) return 0;
+      const id = Scratch.Cast.toNumber(args.ID);
+      const obj = this.objects.get(id);
+      if (!obj) return 0;
       
-      const obj = this.objects[id];
       const axis = args.AXIS;
       
       switch (axis) {
@@ -1112,19 +1266,27 @@
       if (!this.isInitialized) return;
       
       // すべてのオブジェクトを削除
-      for (const obj of this.objects) {
+      for (const [id, obj] of this.objects) {
         this.scene.remove(obj);
         if (obj.geometry) obj.geometry.dispose();
         if (obj.material) obj.material.dispose();
       }
-      this.objects = [];
+      this.objects.clear();
+      this.nextObjectId = 1;
       
-      // カスタムライトを削除（デフォルトライト以外）
-      const lightsToRemove = this.lights.slice(2); // 最初の2つはデフォルトライト
-      for (const light of lightsToRemove) {
-        this.scene.remove(light);
+      // カスタムライト削除（デフォルトライト以外）
+      for (const [id, light] of this.lights) {
+        if (id > 2) { // デフォルトライトのID 1,2 以外
+          this.scene.remove(light);
+        }
       }
-      this.lights = this.lights.slice(0, 2);
+      
+      // デフォルトライトのみ残す
+      const defaultLights = new Map();
+      if (this.lights.has(1)) defaultLights.set(1, this.lights.get(1));
+      if (this.lights.has(2)) defaultLights.set(2, this.lights.get(2));
+      this.lights = defaultLights;
+      this.nextLightId = 3;
       
       console.log('3D scene cleared');
     }
@@ -1138,15 +1300,17 @@
         clearInterval(this.positionUpdateInterval);
         this.positionUpdateInterval = null;
       }
+      console.log('3D rendering paused');
     }
 
     resume3D() {
-      if (!this.animationId && this.isInitialized) {
+      if (!this.animationId && this.isInitialized && this.enable3D) {
         this.animate();
       }
       if (!this.positionUpdateInterval) {
-        this.startStageMonitoring();
+        this.startPositionMonitoring();
       }
+      console.log('3D rendering resumed');
     }
 
     // クリーンアップメソッド
@@ -1161,18 +1325,12 @@
         this.container.parentNode.removeChild(this.container);
       }
       
-      if (this.compositeCanvas && this.stageCanvas) {
-        this.stageCanvas.style.display = '';
-        if (this.compositeCanvas.parentNode) {
-          this.compositeCanvas.parentNode.replaceChild(this.stageCanvas, this.compositeCanvas);
-        }
-      }
-      
       this.clearScene();
       
       window.removeEventListener('resize', this.updateSizeAndPosition);
       
       this.isInitialized = false;
+      this.initPromise = null;
       
       console.log('3D extension disposed');
     }
@@ -1181,4 +1339,3 @@
   // 拡張機能を登録
   Scratch.extensions.register(new ThreeDExtension());
 })(Scratch);
-
