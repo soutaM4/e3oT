@@ -15,7 +15,7 @@
       this.stageCanvas = null;
       this.compositeCanvas = null;
       this.compositeContext = null;
-      this.renderOrder = 'overlay'; // TurboWarpでは単純なオーバーレイ方式
+      this.renderOrder = 'overlay';
       this.currentBlendMode = 'source-over';
       this.current3DOpacity = 0.9;
       this.lights = new Map();
@@ -23,8 +23,9 @@
       this.animationId = null;
       this.threeJSLoaded = false;
       this.initPromise = null;
-      this.zIndexMode = 'auto'; // z-index制御モード
+      this.zIndexMode = 'auto';
       this.enable3D = true;
+      this.resizeObserver = null;
       
       this.loadThreeJS();
     }
@@ -642,8 +643,8 @@
         
         this.isInitialized = true;
         
-        // TurboWarp用の簡単なオーバーレイ設定
-        this.setupSimpleOverlay();
+        // 改良されたオーバーレイ設定
+        this.setupImprovedOverlay();
         this.animate();
         
         console.log('3D extension initialized successfully');
@@ -654,9 +655,8 @@
       }
     }
 
-    setupSimpleOverlay() {
-      // TurboWarpでは複雑な合成は避けて、シンプルなオーバーレイを使用
-      this.findStageElement();
+    setupImprovedOverlay() {
+      this.findAndSetupStageElement();
       
       this.container = document.createElement('div');
       this.container.style.position = 'absolute';
@@ -665,7 +665,13 @@
       this.container.style.width = '100%';
       this.container.style.height = '100%';
       this.container.style.pointerEvents = 'none';
-      this.container.style.zIndex = '10'; // デフォルトは前面
+      this.container.style.zIndex = '10';
+      this.container.style.overflow = 'hidden';
+      
+      // レンダラーのcanvasにスタイルを適用
+      this.renderer.domElement.style.width = '100%';
+      this.renderer.domElement.style.height = '100%';
+      this.renderer.domElement.style.display = 'block';
       
       this.container.appendChild(this.renderer.domElement);
       
@@ -673,7 +679,7 @@
         // ステージ要素の親に追加
         const parent = this.stageElement.parentElement || this.stageElement.parentNode;
         if (parent) {
-          parent.style.position = 'relative'; // 相対位置指定を確保
+          parent.style.position = 'relative';
           parent.appendChild(this.container);
         } else {
           document.body.appendChild(this.container);
@@ -682,81 +688,210 @@
         document.body.appendChild(this.container);
       }
       
-      // サイズと位置の更新を開始
-      this.startPositionMonitoring();
+      // 改良されたサイズ監視を開始
+      this.startImprovedSizeMonitoring();
       
-      console.log('Simple overlay setup complete');
+      console.log('Improved overlay setup complete');
     }
 
-    findStageElement() {
+    findAndSetupStageElement() {
+      // TurboWarp固有のセレクターを含む、より包括的な検索
       const selectors = [
+        // TurboWarp特有
+        '.stage-wrapper_stage-wrapper_2bejr canvas',
+        '.stage-wrapper_stage-canvas_1aVgs',
+        'div[class*="stage-wrapper"] canvas',
+        'div[class*="stage"] canvas',
+        
+        // 一般的なScratch関連
+        'canvas[class*="stage"]',
+        'canvas[class*="Stage"]',
+        '.stage canvas',
+        '.Stage canvas',
+        '#stage canvas',
+        
+        // フォールバック
         'canvas',
-        '.stage',
         'div[class*="stage"]',
         'div[class*="Stage"]',
-        '#app canvas',
-        '.renderer canvas'
+        '.renderer canvas',
+        '#app canvas'
       ];
       
       for (const selector of selectors) {
-        const element = document.querySelector(selector);
-        if (element) {
-          this.stageElement = element;
-          console.log('Stage element found:', selector);
-          return true;
+        const elements = document.querySelectorAll(selector);
+        for (const element of elements) {
+          // キャンバス要素で、ある程度のサイズがあるものを検索
+          if (element.tagName === 'CANVAS') {
+            const rect = element.getBoundingClientRect();
+            if (rect.width > 100 && rect.height > 100) {
+              this.stageCanvas = element;
+              this.stageElement = element;
+              console.log('Stage canvas found:', selector, `${rect.width}x${rect.height}`);
+              return true;
+            }
+          } else if (element.querySelector('canvas')) {
+            // div内のcanvasを検索
+            const canvas = element.querySelector('canvas');
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width > 100 && rect.height > 100) {
+              this.stageCanvas = canvas;
+              this.stageElement = element;
+              console.log('Stage canvas found in div:', selector, `${rect.width}x${rect.height}`);
+              return true;
+            }
+          }
         }
       }
       
-      console.warn('Stage element not found, using document.body');
+      console.warn('Stage element not found, using fallback method');
+      
+      // フォールバック：最大のキャンバス要素を使用
+      const allCanvases = document.querySelectorAll('canvas');
+      let largestCanvas = null;
+      let largestArea = 0;
+      
+      for (const canvas of allCanvases) {
+        const rect = canvas.getBoundingClientRect();
+        const area = rect.width * rect.height;
+        if (area > largestArea && area > 10000) { // 最小サイズチェック
+          largestArea = area;
+          largestCanvas = canvas;
+        }
+      }
+      
+      if (largestCanvas) {
+        this.stageCanvas = largestCanvas;
+        this.stageElement = largestCanvas;
+        console.log('Using largest canvas as fallback:', `${largestCanvas.width}x${largestCanvas.height}`);
+        return true;
+      }
+      
       this.stageElement = document.body;
       return false;
     }
 
-    startPositionMonitoring() {
+    startImprovedSizeMonitoring() {
+      // ResizeObserverが利用可能な場合は使用
+      if (window.ResizeObserver && this.stageCanvas) {
+        this.resizeObserver = new ResizeObserver((entries) => {
+          this.updateSizeAndPosition();
+        });
+        
+        // ステージキャンバスとその親要素を監視
+        this.resizeObserver.observe(this.stageCanvas);
+        if (this.stageCanvas.parentElement) {
+          this.resizeObserver.observe(this.stageCanvas.parentElement);
+        }
+      }
+      
+      // インターバルによる定期チェックも継続（フォールバック）
       this.positionUpdateInterval = setInterval(() => {
         this.updateSizeAndPosition();
       }, 100);
       
-      window.addEventListener('resize', () => this.updateSizeAndPosition());
+      // ウィンドウリサイズイベント
+      window.addEventListener('resize', () => {
+        setTimeout(() => this.updateSizeAndPosition(), 50);
+      });
+      
+      // MutationObserverでDOMの変更を監視
+      if (window.MutationObserver) {
+        const observer = new MutationObserver((mutations) => {
+          let shouldUpdate = false;
+          for (const mutation of mutations) {
+            if (mutation.type === 'attributes' && 
+                (mutation.attributeName === 'style' || 
+                 mutation.attributeName === 'class')) {
+              shouldUpdate = true;
+              break;
+            }
+          }
+          if (shouldUpdate) {
+            setTimeout(() => this.updateSizeAndPosition(), 10);
+          }
+        });
+        
+        if (this.stageCanvas) {
+          observer.observe(this.stageCanvas, {
+            attributes: true,
+            attributeFilter: ['style', 'class']
+          });
+          
+          if (this.stageCanvas.parentElement) {
+            observer.observe(this.stageCanvas.parentElement, {
+              attributes: true,
+              attributeFilter: ['style', 'class']
+            });
+          }
+        }
+      }
+      
+      // 初回更新
+      setTimeout(() => this.updateSizeAndPosition(), 100);
     }
 
     updateSizeAndPosition() {
       if (!this.renderer || !this.camera || !this.container) return;
       
+      let width = 480;
+      let height = 360;
+      let rect = null;
+      
       if (this.stageCanvas) {
-        const rect = this.stageCanvas.getBoundingClientRect();
-        const width = this.stageCanvas.width || rect.width || 480;
-        const height = this.stageCanvas.height || rect.height || 360;
+        rect = this.stageCanvas.getBoundingClientRect();
         
-        // 3Dキャンバスのサイズ更新
-        this.renderer.setSize(width, height);
-        this.camera.aspect = width / height;
-        this.camera.updateProjectionMatrix();
+        // 実際の表示サイズを取得（CSSによる変形も考慮）
+        width = rect.width;
+        height = rect.height;
         
-        // コンテナのサイズ更新
-        this.container.style.width = width + 'px';
-        this.container.style.height = height + 'px';
+        // 最小サイズを設定
+        width = Math.max(width, 100);
+        height = Math.max(height, 100);
         
-        // ステージキャンバスの親要素内での位置調整
-        const stageParent = this.stageCanvas.parentElement;
-        if (stageParent && this.container.parentElement === stageParent) {
-          // 同一親要素内なので、相対位置で良い
-          this.container.style.position = 'absolute';
-          this.container.style.top = '0';
-          this.container.style.left = '0';
-        } else {
-          // 異なる親要素の場合は絶対位置で調整
-          this.container.style.position = 'fixed';
-          this.container.style.top = (rect.top + window.scrollY) + 'px';
-          this.container.style.left = (rect.left + window.scrollX) + 'px';
-        }
+        // 内部解像度とCSS表示サイズを別々に管理
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        const internalWidth = Math.floor(width * devicePixelRatio);
+        const internalHeight = Math.floor(height * devicePixelRatio);
+        
+        // レンダラーの内部解像度を更新
+        this.renderer.setSize(internalWidth, internalHeight, false);
+        
+        // CSS表示サイズを設定
+        this.renderer.domElement.style.width = width + 'px';
+        this.renderer.domElement.style.height = height + 'px';
+        
+        console.log(`3D canvas size updated: ${width}x${height} (internal: ${internalWidth}x${internalHeight})`);
       } else {
         // フォールバック：デフォルトサイズ
-        this.renderer.setSize(480, 360);
-        this.camera.aspect = 480 / 360;
-        this.camera.updateProjectionMatrix();
-        this.container.style.width = '480px';
-        this.container.style.height = '360px';
+        this.renderer.setSize(width, height);
+        this.renderer.domElement.style.width = width + 'px';
+        this.renderer.domElement.style.height = height + 'px';
+      }
+      
+      // カメラのアスペクト比を更新
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+      
+      // コンテナのサイズを更新
+      this.container.style.width = width + 'px';
+      this.container.style.height = height + 'px';
+      
+      // 位置の更新
+      if (rect && this.stageCanvas) {
+        const stageParent = this.stageCanvas.parentElement;
+        if (stageParent && this.container.parentElement === stageParent) {
+          // 同一親要素内なので相対位置
+          const parentRect = stageParent.getBoundingClientRect();
+          this.container.style.position = 'absolute';
+          this.container.style.top = (rect.top - parentRect.top) + 'px';
+          this.container.style.left = (rect.left - parentRect.left) + 'px';
+        } else {
+          // 異なる親要素の場合は固定位置
+          this.container.style.position = 'fixed';
+          this.container.style.top = rect.top + 'px';
+          this.container.style.left = rect.left + 'px';
+        }
       }
     }
 
@@ -1308,7 +1443,7 @@
         this.animate();
       }
       if (!this.positionUpdateInterval) {
-        this.startPositionMonitoring();
+        this.startImprovedSizeMonitoring();
       }
       console.log('3D rendering resumed');
     }
@@ -1316,6 +1451,11 @@
     // クリーンアップメソッド
     dispose() {
       this.pause3D();
+      
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+        this.resizeObserver = null;
+      }
       
       if (this.renderer) {
         this.renderer.dispose();
