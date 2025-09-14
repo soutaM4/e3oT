@@ -7,10 +7,14 @@ samplefps.sb3は作品例（銃のゲームです。実際にe3oTを使用して
 
 となっています。
 
+
+
 youtubeにプロモーション動画とチュートリアルをあげていますので、ぜひご覧ください。
 
 PV: https://www.youtube.com/watch?v=nJwdLDV-Rmg
 チュートリアル: https://youtu.be/dlpv2F1sdfw
+
+
 
 [リリースノート]
 
