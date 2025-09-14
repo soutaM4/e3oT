@@ -9,6 +9,7 @@ PV: https://www.youtube.com/watch?v=nJwdLDV-Rmg
 チュートリアル: https://youtu.be/dlpv2F1sdfw
 
 [リリースノート]
+
 v1.　リリース直後のバージョンです。
 
 v1.1.画面のタッチや、ポインターロック拡張機能との互換性を持たせました。
