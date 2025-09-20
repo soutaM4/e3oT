@@ -29,6 +29,10 @@
       this.enable3D = true;
       this.resizeObserver = null;
       
+      // 3Dモデルアセット管理
+      this.modelAssets = new Map(); // assetId -> { name, data, type }
+      this.nextAssetId = 1;
+      
       this.loadThreeJS();
     }
 
@@ -191,14 +195,27 @@
               }
             }
           },
+          '---',
           {
-            opcode: 'addModel',
+            opcode: 'loadModelFile',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'モデルを追加 URL [URL] スケール [SCALE] 色 [COLOR] 透明度 [OPACITY] 明るさ [BRIGHTNESS]',
+            text: '3Dモデルファイルを読み込み 名前 [NAME]',
             arguments: {
-              URL: {
+              NAME: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: 'https://example.com/model.gltf'
+                defaultValue: 'mymodel'
+              }
+            }
+          },
+          {
+            opcode: 'addModelFromAsset',
+            blockType: Scratch.BlockType.COMMAND,
+            text: 'アセット [ASSET_ID] からモデルを追加 スケール [SCALE] 色 [COLOR] 透明度 [OPACITY] 明るさ [BRIGHTNESS]',
+            arguments: {
+              ASSET_ID: {
+                type: Scratch.ArgumentType.STRING,
+                menu: 'modelAssets',
+                defaultValue: '1'
               },
               SCALE: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -220,10 +237,14 @@
             }
           },
           {
-            opcode: 'addModelFromFile',
+            opcode: 'addModel',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'ファイルからモデルを追加 スケール [SCALE] 色 [COLOR] 透明度 [OPACITY] 明るさ [BRIGHTNESS]',
+            text: 'URLからモデルを追加 URL [URL] スケール [SCALE] 色 [COLOR] 透明度 [OPACITY] 明るさ [BRIGHTNESS]',
             arguments: {
+              URL: {
+                type: Scratch.ArgumentType.STRING,
+                defaultValue: 'https://example.com/model.gltf'
+              },
               SCALE: {
                 type: Scratch.ArgumentType.NUMBER,
                 defaultValue: 1
@@ -597,6 +618,52 @@
           },
           '---',
           {
+            opcode: 'removeModelAsset',
+            blockType: Scratch.BlockType.COMMAND,
+            text: 'アセット [ASSET_ID] を削除',
+            arguments: {
+              ASSET_ID: {
+                type: Scratch.ArgumentType.STRING,
+                menu: 'modelAssets',
+                defaultValue: '1'
+              }
+            }
+          },
+          {
+            opcode: 'listModelAssets',
+            blockType: Scratch.BlockType.REPORTER,
+            text: 'モデルアセット一覧'
+          },
+          {
+            opcode: 'getModelAssetName',
+            blockType: Scratch.BlockType.REPORTER,
+            text: 'アセット [ASSET_ID] の名前',
+            arguments: {
+              ASSET_ID: {
+                type: Scratch.ArgumentType.STRING,
+                menu: 'modelAssets',
+                defaultValue: '1'
+              }
+            }
+          },
+          {
+            opcode: 'exportProjectData',
+            blockType: Scratch.BlockType.REPORTER,
+            text: 'プロジェクトデータを書き出し'
+          },
+          {
+            opcode: 'importProjectData',
+            blockType: Scratch.BlockType.COMMAND,
+            text: 'プロジェクトデータを読み込み [DATA]',
+            arguments: {
+              DATA: {
+                type: Scratch.ArgumentType.STRING,
+                defaultValue: ''
+              }
+            }
+          },
+          '---',
+          {
             opcode: 'getObjectCount',
             blockType: Scratch.BlockType.REPORTER,
             text: 'オブジェクト数'
@@ -702,9 +769,246 @@
               { text: '元の色', value: 'default' },
               { text: 'カスタム', value: 'custom' }
             ]
+          },
+          modelAssets: {
+            acceptReporters: true,
+            items: this._getModelAssetItems()
           }
         }
       };
+    }
+
+    _getModelAssetItems() {
+      const items = [];
+      for (const [id, asset] of this.modelAssets) {
+        items.push({ text: asset.name, value: id.toString() });
+      }
+      if (items.length === 0) {
+        items.push({ text: 'アセットなし', value: '0' });
+      }
+      return items;
+    }
+
+    // アセット管理メソッド
+    async loadModelFile(args) {
+      const name = Scratch.Cast.toString(args.NAME) || 'model';
+      
+      try {
+        // ファイル入力要素を作成
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.gltf,.glb';
+        
+        // ファイル選択時の処理
+        input.onchange = async (event) => {
+          const file = event.target.files[0];
+          if (!file) {
+            console.warn('ファイルが選択されていません');
+            return;
+          }
+          
+          try {
+            const reader = new FileReader();
+            const fileData = await new Promise((resolve, reject) => {
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
+              reader.readAsArrayBuffer(file);
+            });
+            
+            // アセットとして保存
+            const assetId = this.nextAssetId++;
+            const asset = {
+              name: name,
+              data: fileData,
+              type: file.name.toLowerCase().endsWith('.glb') ? 'glb' : 'gltf',
+              originalName: file.name
+            };
+            
+            this.modelAssets.set(assetId, asset);
+            console.log(`3Dモデルをアセットとして保存しました (ID: ${assetId}, 名前: ${name}, ファイル: ${file.name})`);
+            
+            // メニューを更新
+            this._updateModelAssetMenu();
+            
+          } catch (error) {
+            console.error(`ファイル読み込みエラー: ${file.name}`, error);
+          }
+          
+          // 入力要素を削除
+          input.remove();
+        };
+        
+        // ファイル選択ダイアログを表示
+        input.click();
+      } catch (error) {
+        console.error('ファイル選択処理エラー', error);
+      }
+    }
+
+    _updateModelAssetMenu() {
+      // Scratchのメニューを動的に更新（可能な場合）
+      if (this.runtime && this.runtime.requestUpdateForBlockType) {
+        this.runtime.requestUpdateForBlockType('addModelFromAsset');
+        this.runtime.requestUpdateForBlockType('removeModelAsset');
+        this.runtime.requestUpdateForBlockType('getModelAssetName');
+      }
+    }
+
+    async addModelFromAsset(args, util) {
+      await this.init();
+      if (!this.isInitialized || typeof THREE === 'undefined' || !this.GLTFLoader) return;
+      
+      const assetId = parseInt(Scratch.Cast.toString(args.ASSET_ID)) || 0;
+      const scale = Scratch.Cast.toNumber(args.SCALE);
+      const colorOption = Scratch.Cast.toString(args.COLOR);
+      const opacity = Math.max(0, Math.min(1, Scratch.Cast.toNumber(args.OPACITY)));
+      const brightness = Math.max(0, Math.min(1, Scratch.Cast.toNumber(args.BRIGHTNESS)));
+      
+      const asset = this.modelAssets.get(assetId);
+      if (!asset) {
+        console.warn(`アセットID ${assetId} が見つかりません`);
+        return;
+      }
+      
+      try {
+        const loader = new this.GLTFLoader();
+        const gltf = await new Promise((resolve, reject) => {
+          loader.parse(asset.data, '', resolve, reject);
+        });
+        
+        const model = gltf.scene;
+        model.scale.set(scale, scale, scale);
+        
+        // マテリアル処理
+        model.traverse((child) => {
+          if (child.isMesh && child.material) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            child.material.transparent = opacity < 1;
+            child.material.opacity = opacity;
+            child.material.emissive = new THREE.Color(brightness, brightness, brightness);
+            if (colorOption === 'custom') {
+              const color = util ? util.target.getField('COLOR') : '#ffffff';
+              child.material.color.setHex(parseInt(color.slice(1), 16));
+            }
+          }
+        });
+        
+        this.scene.add(model);
+        const id = this.nextObjectId++;
+        this.objects.set(id, model);
+        
+        console.log(`アセット ${asset.name} からモデルを追加しました (ID: ${id}, 透明度: ${opacity}, 明るさ: ${brightness})`);
+      } catch (error) {
+        console.error(`アセット読み込みエラー: ${asset.name}`, error);
+      }
+    }
+
+    removeModelAsset(args) {
+      const assetId = parseInt(Scratch.Cast.toString(args.ASSET_ID)) || 0;
+      
+      if (this.modelAssets.has(assetId)) {
+        const asset = this.modelAssets.get(assetId);
+        this.modelAssets.delete(assetId);
+        console.log(`アセット ${asset.name} (ID: ${assetId}) を削除しました`);
+        this._updateModelAssetMenu();
+      } else {
+        console.warn(`アセットID ${assetId} が見つかりません`);
+      }
+    }
+
+    listModelAssets() {
+      const assetList = [];
+      for (const [id, asset] of this.modelAssets) {
+        assetList.push(`${id}: ${asset.name}`);
+      }
+      return assetList.join(', ') || 'アセットなし';
+    }
+
+    getModelAssetName(args) {
+      const assetId = parseInt(Scratch.Cast.toString(args.ASSET_ID)) || 0;
+      const asset = this.modelAssets.get(assetId);
+      return asset ? asset.name : '';
+    }
+
+    // プロジェクトデータのエクスポート/インポート
+    exportProjectData() {
+      const projectData = {
+        version: '1.0',
+        modelAssets: {},
+        nextAssetId: this.nextAssetId
+      };
+      
+      // アセットデータをBase64エンコード
+      for (const [id, asset] of this.modelAssets) {
+        const uint8Array = new Uint8Array(asset.data);
+        const base64Data = this._arrayBufferToBase64(uint8Array);
+        projectData.modelAssets[id] = {
+          name: asset.name,
+          data: base64Data,
+          type: asset.type,
+          originalName: asset.originalName
+        };
+      }
+      
+      return JSON.stringify(projectData);
+    }
+
+    importProjectData(args) {
+      const dataStr = Scratch.Cast.toString(args.DATA);
+      if (!dataStr) {
+        console.warn('データが空です');
+        return;
+      }
+      
+      try {
+        const projectData = JSON.parse(dataStr);
+        
+        if (projectData.version && projectData.modelAssets) {
+          // 既存のアセットをクリア
+          this.modelAssets.clear();
+          
+          // アセットを復元
+          for (const [id, assetData] of Object.entries(projectData.modelAssets)) {
+            const arrayBuffer = this._base64ToArrayBuffer(assetData.data);
+            const asset = {
+              name: assetData.name,
+              data: arrayBuffer,
+              type: assetData.type,
+              originalName: assetData.originalName
+            };
+            this.modelAssets.set(parseInt(id), asset);
+          }
+          
+          this.nextAssetId = projectData.nextAssetId || this.nextAssetId;
+          this._updateModelAssetMenu();
+          
+          console.log(`プロジェクトデータを読み込みました (${this.modelAssets.size} アセット)`);
+        } else {
+          console.warn('無効なプロジェクトデータ形式です');
+        }
+      } catch (error) {
+        console.error('プロジェクトデータの読み込みエラー:', error);
+      }
+    }
+
+    // Base64変換ユーティリティ
+    _arrayBufferToBase64(buffer) {
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    _base64ToArrayBuffer(base64) {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes.buffer;
     }
 
     async init() {
@@ -1246,80 +1550,6 @@
       }
     }
 
-    async addModelFromFile(args, util) {
-      await this.init();
-      if (!this.isInitialized || typeof THREE === 'undefined' || !this.GLTFLoader) return;
-      
-      const scale = Scratch.Cast.toNumber(args.SCALE);
-      const colorOption = Scratch.Cast.toString(args.COLOR);
-      const opacity = Math.max(0, Math.min(1, Scratch.Cast.toNumber(args.OPACITY)));
-      const brightness = Math.max(0, Math.min(1, Scratch.Cast.toNumber(args.BRIGHTNESS)));
-      
-      try {
-        // ファイル入力要素を作成
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.gltf,.glb';
-        
-        // ファイル選択時の処理
-        input.onchange = async (event) => {
-          const file = event.target.files[0];
-          if (!file) {
-            console.warn('ファイルが選択されていません');
-            return;
-          }
-          
-          try {
-            const reader = new FileReader();
-            const fileData = await new Promise((resolve, reject) => {
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
-              reader.readAsArrayBuffer(file);
-            });
-            
-            const loader = new this.GLTFLoader();
-            const gltf = await new Promise((resolve, reject) => {
-              loader.parse(fileData, '', resolve, reject);
-            });
-            
-            const model = gltf.scene;
-            model.scale.set(scale, scale, scale);
-            
-            // マテリアル処理
-            model.traverse((child) => {
-              if (child.isMesh && child.material) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-                child.material.transparent = opacity < 1;
-                child.material.opacity = opacity;
-                child.material.emissive = new THREE.Color(brightness, brightness, brightness);
-                if (colorOption === 'custom') {
-                  const color = util ? util.target.getField('COLOR') : '#ffffff';
-                  child.material.color.setHex(parseInt(color.slice(1), 16));
-                }
-              }
-            });
-            
-            this.scene.add(model);
-            const id = this.nextObjectId++;
-            this.objects.set(id, model);
-            
-            console.log(`ファイルからモデルを追加しました (ID: ${id}, ファイル: ${file.name}, 透明度: ${opacity}, 明るさ: ${brightness})`);
-          } catch (error) {
-            console.error(`ファイルモデル読み込みエラー: ${file.name}`, error);
-          }
-          
-          // 入力要素を削除
-          input.remove();
-        };
-        
-        // ファイル選択ダイアログを表示
-        input.click();
-      } catch (error) {
-        console.error('ファイル選択処理エラー', error);
-      }
-    }
-
     setObjectPosition(args) {
       if (!this.isInitialized) return;
       
@@ -1743,6 +1973,10 @@
       }
       
       this.clearScene();
+      
+      // アセットもクリア
+      this.modelAssets.clear();
+      this.nextAssetId = 1;
       
       window.removeEventListener('resize', this.updateSizeAndPosition);
       
