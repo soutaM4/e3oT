@@ -350,7 +350,7 @@
               }
             }
           },
-          { // [MODIFIED] Block changed to include physics type
+          {
             opcode: 'addPhysicsToObject',
             blockType: Scratch.BlockType.COMMAND,
             text: 'オブジェクト [ID] に物理を追加 種類 [TYPE] 質量 [MASS] 形状 [SHAPE]',
@@ -375,7 +375,7 @@
               }
             }
           },
-          { // [NEW] New block to change physics type
+          {
             opcode: 'setObjectPhysicsType',
             blockType: Scratch.BlockType.COMMAND,
             text: 'オブジェクト [ID] の物理タイプを [TYPE] にする',
@@ -1142,14 +1142,14 @@
               { text: '箱型', value: 'box' },
               { text: '球型', value: 'sphere' },
               { text: '円柱型', value: 'cylinder' },
-              { text: '平面型', value: 'plane' }
+              { text: '平面型', value: 'plane' },
+              { text: 'メッシュ (静的)', value: 'trimesh' }
             ]
           },
           modelAssets: {
             acceptReporters: true,
             items: this._getModelAssetItems()
           },
-          // [NEW] New menu for physics type
           physicsTypes: {
             acceptReporters: false,
             items: [
@@ -1164,7 +1164,7 @@
     _getModelAssetItems() {
       const items = [];
       for (const [id, asset] of this.modelAssets) {
-        items.push({ text: asset.name, value: id.toString() });
+        items.push({ text: `${id}: ${asset.name}`, value: id.toString() });
       }
       if (items.length === 0) {
         items.push({ text: 'アセットなし', value: '0' });
@@ -1309,12 +1309,12 @@
       console.log('Gravity set to:', this.world.gravity);
     }
 
-    // [MODIFIED] Function updated to handle physics type
+    // [MODIFIED] Function updated to handle shape offsets and improved trimesh
     addPhysicsToObject(args) {
         if (!this.isInitialized || !this.world) return;
     
         const id = Scratch.Cast.toNumber(args.ID);
-        const type = args.TYPE;
+        let type = args.TYPE;
         const userInputMass = Scratch.Cast.toNumber(args.MASS);
         const shapeType = args.SHAPE;
     
@@ -1329,41 +1329,125 @@
         }
     
         let mass;
-        if (type === 'static') {
-            mass = 0; // Static bodies have 0 mass
+        if (type === 'static' || shapeType === 'trimesh') {
+            mass = 0; // Static bodies and Trimesh must have 0 mass
+            if (shapeType === 'trimesh' && type !== 'static') {
+                 console.warn('Trimesh shape is only supported for STATIC bodies. Forcing type to static.');
+                 type = 'static';
+            }
         } else {
             mass = userInputMass > 0 ? userInputMass : 1; // Dynamic bodies must have mass > 0
         }
     
+        // [MODIFIED] Calculate bounding box and its center offset
+        const box = new THREE.Box3().setFromObject(mesh);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const sphereBounds = new THREE.Sphere();
+        box.getBoundingSphere(sphereBounds);
+        
+        const boxCenter = new THREE.Vector3();
+        box.getCenter(boxCenter);
+        
+        // Calculate the local offset from the object's origin (mesh.position)
+        const localOffset = new THREE.Vector3().subVectors(boxCenter, mesh.position);
+        const cannonOffset = new CANNON.Vec3(localOffset.x, localOffset.y, localOffset.z);
+        let cannonQuat = null; // Store local rotation for trimesh
+    
         let shape;
-        const geometry = mesh.geometry;
-        geometry.computeBoundingBox();
-        geometry.computeBoundingSphere();
     
         if (shapeType === 'box') {
-            const size = new THREE.Vector3();
-            geometry.boundingBox.getSize(size);
-            size.multiply(mesh.scale);
             shape = new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2));
         } else if (shapeType === 'sphere') {
-            const radius = geometry.boundingSphere.radius * Math.max(mesh.scale.x, mesh.scale.y, mesh.scale.z);
+            const radius = sphereBounds.radius;
             shape = new CANNON.Sphere(radius);
         } else if (shapeType === 'cylinder') {
-            const size = new THREE.Vector3();
-            geometry.boundingBox.getSize(size);
-            size.multiply(mesh.scale);
             const radius = Math.max(size.x, size.z) / 2;
             const height = size.y;
             shape = new CANNON.Cylinder(radius, radius, height, 16);
         } else if (shapeType === 'plane') {
             shape = new CANNON.Plane();
+            cannonOffset.set(0, 0, 0); // Plane's offset is handled by rotation, not position
+        } else if (shapeType === 'trimesh') {
+            let targetMesh = mesh;
+            let foundMesh = false;
+            if (mesh.isGroup) {
+                mesh.traverse((child) => {
+                    if (!foundMesh && child.isMesh) {
+                        targetMesh = child;
+                        foundMesh = true;
+                    }
+                });
+            }
+            
+            if (!targetMesh || !targetMesh.isMesh || !targetMesh.geometry) {
+                console.error('Trimesh shape requires a Mesh with Geometry. Could not find one in object ' + id + '. Falling back to Box.');
+                shape = new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2));
+                // cannonOffset is already set to the group's bounding box center, which is correct for this fallback
+            } else {
+                // [NEW] Improved Trimesh logic
+                const geometry = targetMesh.geometry;
+                let vertices, indices;
+
+                if (geometry.isBufferGeometry) {
+                    vertices = geometry.attributes.position.array;
+                    indices = geometry.index ? geometry.index.array : null;
+                } else {
+                    const bufferGeom = new THREE.BufferGeometry().fromGeometry(geometry);
+                    vertices = bufferGeom.attributes.position.array;
+                    indices = bufferGeom.index ? bufferGeom.index.array : null;
+                }
+
+                if (!indices) {
+                    indices = new (vertices.length > 65535 ? Uint32Array : Uint16Array)(vertices.length / 3);
+                    for (let i = 0; i < indices.length; i++) {
+                        indices[i] = i;
+                    }
+                }
+                
+                // Apply the target mesh's WORLD scale to the vertices
+                const worldScale = new THREE.Vector3();
+                targetMesh.getWorldScale(worldScale);
+
+                const scaledVertices = new Float32Array(vertices.length);
+                for(let i = 0; i < vertices.length; i += 3) {
+                    scaledVertices[i]   = vertices[i]   * worldScale.x;
+                    scaledVertices[i+1] = vertices[i+1] * worldScale.y;
+                    scaledVertices[i+2] = vertices[i+2] * worldScale.z;
+                }
+                
+                shape = new CANNON.Trimesh(scaledVertices, indices);
+
+                // Calculate the trimesh's local offset and rotation relative to the BODY (mesh)
+                const meshWorldPos = new THREE.Vector3();
+                mesh.getWorldPosition(meshWorldPos);
+                
+                const meshWorldQuat = new THREE.Quaternion();
+                mesh.getWorldQuaternion(meshWorldQuat);
+                const meshWorldQuatInv = meshWorldQuat.clone().invert();
+
+                const targetWorldPos = new THREE.Vector3();
+                targetMesh.getWorldPosition(targetWorldPos);
+
+                const targetWorldQuat = new THREE.Quaternion();
+                targetMesh.getWorldQuaternion(targetWorldQuat);
+                
+                // localPos = targetWorldPos - meshWorldPos, then rotate by meshInvQuat
+                const localPosVec3 = new THREE.Vector3().subVectors(targetWorldPos, meshWorldPos);
+                localPosVec3.applyQuaternion(meshWorldQuatInv);
+                cannonOffset.set(localPosVec3.x, localPosVec3.y, localPosVec3.z);
+                
+                // localQuat = meshInvQuat * targetQuat
+                const localQuatQuat = meshWorldQuatInv.clone().multiply(targetWorldQuat);
+                cannonQuat = new CANNON.Quaternion(localQuatQuat.x, localQuatQuat.y, localQuatQuat.z, localQuatQuat.w);
+            }
         } else {
-            shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+            shape = new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2));
         }
     
+        // [MODIFIED] Create body *without* shape
         const body = new CANNON.Body({
             mass: mass,
-            shape: shape,
             position: new CANNON.Vec3(mesh.position.x, mesh.position.y, mesh.position.z),
             quaternion: new CANNON.Quaternion().setFromEuler(
                 mesh.rotation.x,
@@ -1372,18 +1456,19 @@
             )
         });
     
+        // [MODIFIED] Add shape with offset and (if trimesh) local rotation
+        body.addShape(shape, cannonOffset, cannonQuat);
+    
         body.material = new CANNON.Material();
         body.material.restitution = 0.3;
         body.material.friction = 0.3;
     
         this.world.addBody(body);
-        // Store the original user-defined mass for dynamic types, so it can be restored
         this.physicsBodies.set(id, { body: body, mesh: mesh, _originalMass: userInputMass });
     
         console.log(`Physics added to object ${id} (type: ${type}, mass: ${mass}, shape: ${shapeType})`);
     }
 
-    // [NEW] Function to change an existing body's physics type
     setObjectPhysicsType(args) {
       const id = Scratch.Cast.toNumber(args.ID);
       const type = args.TYPE;
@@ -1396,8 +1481,12 @@
       
       const body = physicsData.body;
 
+      if (body.shapes[0] instanceof CANNON.Trimesh && type === 'dynamic') {
+        console.warn(`Object ${id} has a Trimesh shape and cannot be made dynamic. It will remain static.`);
+        return;
+      }
+
       if (type === 'static') {
-        // If it's currently dynamic, save its mass before making it static
         if (body.mass > 0) {
           physicsData._originalMass = body.mass;
         }
@@ -1406,7 +1495,6 @@
         body.velocity.set(0, 0, 0);
         body.angularVelocity.set(0, 0, 0);
       } else { // dynamic
-        // Restore its original mass, or default to 1 if not available
         body.mass = (physicsData._originalMass && physicsData._originalMass > 0) ? physicsData._originalMass : 1;
         body.type = CANNON.Body.DYNAMIC;
       }
@@ -1511,11 +1599,10 @@
         return;
       }
       
-      // Only allow setting mass for dynamic bodies
       if (physicsData.body.type === CANNON.Body.DYNAMIC) {
-        physicsData.body.mass = mass > 0 ? mass : 1; // Mass must be > 0
+        physicsData.body.mass = mass > 0 ? mass : 1;
         physicsData.body.updateMassProperties();
-        physicsData._originalMass = physicsData.body.mass; // Update stored original mass
+        physicsData._originalMass = physicsData.body.mass;
       } else {
         console.warn(`Cannot set mass for static object ${id}. Use the 'set physics type' block.`);
       }
@@ -1577,6 +1664,9 @@
         shape.radiusTop = Scratch.Cast.toNumber(args.X) / 2;
         shape.radiusBottom = Scratch.Cast.toNumber(args.X) / 2;
         shape.height = Scratch.Cast.toNumber(args.Y);
+      } else if (shape instanceof CANNON.Trimesh) {
+          console.warn("Cannot resize Trimesh shape at runtime. Remove and re-add physics.");
+          return;
       }
 
       shape.updateBoundingSphereRadius();
@@ -1609,6 +1699,15 @@
               case 'z': return shape.radiusTop * 2;
               default: return 0;
           }
+      } else if (shape instanceof CANNON.Trimesh) {
+          shape.updateAABB();
+          const aabb = shape.aabb;
+          switch (axis) {
+              case 'x': return aabb.upperBound.x - aabb.lowerBound.x;
+              case 'y': return aabb.upperBound.y - aabb.lowerBound.y;
+              case 'z': return aabb.upperBound.z - aabb.lowerBound.z;
+              default: return 0;
+          }
       }
       return 0;
     }
@@ -1627,11 +1726,11 @@
 
         if (show) {
             if (debugMesh) {
-                // If it exists, just make sure it's visible
                 debugMesh.visible = true;
             } else {
-                // Otherwise, create it
                 const shape = physicsData.body.shapes[0];
+                if (!shape) return;
+
                 let geometry;
                 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
 
@@ -1642,6 +1741,12 @@
                     geometry = new THREE.SphereGeometry(shape.radius, 16, 16);
                 } else if (shape instanceof CANNON.Cylinder) {
                     geometry = new THREE.CylinderGeometry(shape.radiusTop, shape.radiusBottom, shape.height, shape.numSegments || 16);
+                } else if (shape instanceof CANNON.Trimesh) {
+                    const vertices = shape.vertices;
+                    const indices = shape.indices;
+                    geometry = new THREE.BufferGeometry();
+                    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+                    geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
                 }
 
                 if (geometry) {
@@ -1673,6 +1778,7 @@
       }
     }
 
+    // [MODIFIED] Update physics debug mesh to account for offset
     updatePhysics() {
       if (!this.physicsEnabled || !this.world) return;
       
@@ -1686,8 +1792,26 @@
 
         const debugMesh = this.debugMeshes.get(id);
         if (debugMesh && debugMesh.visible) {
-            debugMesh.position.copy(body.position);
-            debugMesh.quaternion.copy(body.quaternion);
+            // [FIX] Apply the shape's local offset and rotation to the debug mesh
+            const shapeOffset = body.shapeOffsets[0];
+            const shapeQuat = body.shapeOrientations[0];
+            
+            if (shapeOffset) {
+                // Convert CANNON.Vec3 offset to THREE.Vector3 and apply body's rotation to it
+                const offset = new THREE.Vector3(shapeOffset.x, shapeOffset.y, shapeOffset.z);
+                offset.applyQuaternion(mesh.quaternion); // mesh.quaternion is body.quaternion
+                debugMesh.position.copy(mesh.position).add(offset);
+            } else {
+                debugMesh.position.copy(mesh.position);
+            }
+            
+            if (shapeQuat) {
+                // Combine body's rotation with shape's local rotation
+                const quat = new THREE.Quaternion(shapeQuat.x, shapeQuat.y, shapeQuat.z, shapeQuat.w);
+                debugMesh.quaternion.copy(mesh.quaternion).multiply(quat);
+            } else {
+                debugMesh.quaternion.copy(mesh.quaternion);
+            }
         }
       }
     }
