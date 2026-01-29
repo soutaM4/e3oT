@@ -213,9 +213,8 @@
             text: 'アセット [ASSET_ID] からモデルを追加 スケール [SCALE] 色 [COLOR] 透明度 [OPACITY] 明るさ [BRIGHTNESS]',
             arguments: {
               ASSET_ID: {
-                type: Scratch.ArgumentType.STRING,
-                menu: 'modelAssets',
-                defaultValue: '1'
+                type: Scratch.ArgumentType.NUMBER,
+                defaultValue: 1
               },
               SCALE: {
                 type: Scratch.ArgumentType.NUMBER,
