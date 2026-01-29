@@ -266,7 +266,6 @@
             blockType: Scratch.BlockType.COMMAND,
             text: 'アセット [ASSET_ID] からモデルを追加 スケール [SCALE] 色 [COLOR] 透明度 [OPACITY] 明るさ [BRIGHTNESS]',
             arguments: {
-              // 変更: menu: 'modelAssets'を削除し、typeをNUMBERに変更
               ASSET_ID: {
                 type: Scratch.ArgumentType.NUMBER,
                 defaultValue: 1
