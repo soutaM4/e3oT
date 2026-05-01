@@ -3,162 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e3oT | 3D ENGINE</title>
+    <title>e3oT - easy 3D on TurboWarp</title>
+
+    <link rel="icon" type="image/png" href="https://dl.dropboxusercontent.com/scl/fi/87o0j0roa0sk8q9wplcf8/e3logowhite.png?rlkey=j5dtxe1e30j3j1icnpqcjqsd6&raw=1">
+    <link rel="apple-touch-icon" href="https://dl.dropboxusercontent.com/scl/fi/87o0j0roa0sk8q9wplcf8/e3logowhite.png?rlkey=j5dtxe1e30j3j1icnpqcjqsd6&raw=1">
+
     <style>
         :root {
-            --primary: #00ff88;
-            --bg: #050505;
-            --card-bg: rgba(18, 18, 18, 0.9);
-            --text: #ffffff;
-            --accent-grad: linear-gradient(90deg, #00ff88, #00bdff);
-            --e3ot-logo: url('https://97f121c4a7.cbaul-cdnwnd.com/8c79520a09c0f60e36e9fc8397a6f767/200000006-2275722759/e3oT_homepage_backgrownd.svg?ph=97f121c4a7');
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --secondary-bg: #0a0a0a;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --header-height: 90px;
         }
 
-        html { scroll-behavior: smooth; }
-
-        body {
+        body, html {
             margin: 0; padding: 0;
-            font-family: 'Inter', 'Noto Sans JP', sans-serif;
-            background-color: var(--bg); color: var(--text);
-            line-height: 1.8;
+            font-family: 'Bahnschrift', 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            line-height: 1.8; scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased; overflow-x: hidden;
         }
 
-        /* ヘッダー */
+        /* ========== HEADER ========== */
         header {
-            position: fixed; top: 0; width: 100%;
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 5%; box-sizing: border-box;
-            background: rgba(5, 5, 5, 0.9); backdrop-filter: blur(15px);
-            z-index: 2000; border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+            position: fixed; top: 0; width: 100%; height: var(--header-height);
+            padding: 0 6%; display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(20px);
+            z-index: 1000; box-sizing: border-box; border-bottom: 1px solid var(--border-color);
         }
 
-        .header-left { display: flex; align-items: center; }
-        .header-title { 
-            font-size: 1.5rem; font-weight: 900; letter-spacing: 1px; 
-            background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .header-subtitle {
-            margin-left: 12px; font-size: 0.8rem; color: var(--primary);
-            font-weight: bold; text-transform: uppercase; letter-spacing: 2px;
-            border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px;
-        }
+        .header-logo-img { height: 42px; width: auto; cursor: pointer; }
 
-        nav a { color: var(--text); text-decoration: none; margin-left: 25px; font-size: 0.9rem; transition: color 0.3s; }
-        nav a:hover { color: var(--primary); }
+        .nav-links { display: flex; align-items: center; gap: 35px; }
+        .nav-links a, .nav-btn {
+            color: white; text-decoration: none; font-size: 0.85rem; opacity: 0.5;
+            transition: 0.3s; letter-spacing: 0.1em; text-transform: uppercase;
+            cursor: pointer; background: none; border: none; font-family: inherit;
+        }
+        .nav-links a:hover, .nav-btn:hover { opacity: 1; }
 
-        /* ヒーローセクション */
+        /* ========== MAIN CONTENT ========== */
+        #main-site-content { transition: opacity 0.5s ease; opacity: 1; visibility: visible; }
+        #main-site-content.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* ========== HERO ========== */
         .hero {
-            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
-            position: relative;
-            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), var(--e3ot-logo);
-            background-size: cover; background-position: center; background-attachment: fixed;
+            height: 100vh; display: flex; justify-content: center; align-items: center;
+            position: relative; overflow: hidden;
         }
-        .hero h1 { font-size: clamp(4rem, 15vw, 8rem); margin: 0; font-weight: 900; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -3px; }
-        .hero p { font-size: 1.5rem; color: #eee; margin: 15px 0; }
+        .video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        .video-bg { width: 100%; height: 100%; filter: brightness(0.5); object-fit: cover; }
+        .hero-content { text-align: center; z-index: 1; max-width: 1000px; padding: 0 30px; }
+        .hero-logo-img { max-width: 650px; width: 90%; height: auto; animation: logoFadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        .hero-subtext { margin-top: 35px; font-size: clamp(1.1rem, 2.5vw, 1.4rem); letter-spacing: 0.6em; text-transform: uppercase; }
 
-        /* スクロールガイド（SCROLL文字 + ↓） */
-        .scroll-guide { 
-            position: absolute; bottom: 40px; 
-            color: var(--primary); text-align: center; 
-            text-decoration: none;
-            display: flex; flex-direction: column; align-items: center;
+        .scroll-hint {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 2; display: flex; flex-direction: column; align-items: center;
+            text-decoration: none; color: #fff; opacity: 0.4; transition: 0.3s;
         }
-        .scroll-text {
-            font-size: 0.7rem; letter-spacing: 3px; font-weight: bold; margin-bottom: 5px;
-        }
-        .arrow { font-size: 2rem; line-height: 1; animation: bounce 2s infinite; }
-
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
-
-        /* コンテンツセクション */
-        .content-section { padding: 100px 10%; max-width: 1000px; margin: 0 auto; }
-        h2 { font-size: 2.2rem; margin-bottom: 40px; border-left: 6px solid var(--primary); padding-left: 20px; }
-        
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 30px; 
+        .scroll-hint:hover { opacity: 1; }
+        .scroll-text { font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+        .scroll-arrow-box { width: 24px; height: 24px; position: relative; animation: arrowAnim 2s infinite; }
+        .scroll-arrow-box::before {
+            content: ''; position: absolute; top: 0; left: 50%; width: 10px; height: 10px;
+            border-right: 2px solid #fff; border-bottom: 2px solid #fff; transform: translateX(-50%) rotate(45deg);
         }
 
-        .feature-box { background: var(--card-bg); padding: 35px; border-radius: 20px; border: 1px solid rgba(0, 255, 136, 0.1); transition: 0.3s; height: 100%; box-sizing: border-box; }
-        .feature-box:hover { border-color: var(--primary); transform: translateY(-5px); }
-        .feature-box h3 { margin-top: 0; color: var(--primary); }
-
-        .update-note { margin-top: 40px; background: rgba(0, 255, 136, 0.05); border-left: 4px solid var(--primary); padding: 25px; border-radius: 0 15px 15px 0; }
-
-        footer { padding: 50px; text-align: center; color: #555; border-top: 1px solid rgba(0, 255, 136, 0.1); }
-
-        @media (max-width: 768px) {
-            .grid { grid-template-columns: 1fr; }
+        @keyframes arrowAnim {
+            0% { opacity: 0; transform: translateY(-10px); }
+            50% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(10px); }
         }
+
+        /* ========== SECTIONS ========== */
+        section:not(.hero) { padding: 120px 10%; background-color: var(--bg-color); }
+        section:nth-child(even) { background-color: var(--secondary-bg); }
+        .section-container { max-width: 1200px; margin: 0 auto; }
+        h2 { font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: 60px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+        .about-intro { font-size: 1.2rem; max-width: 800px; margin-bottom: 80px; opacity: 0.8; }
+
+        .feature-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-bottom: 80px;
+        }
+        .feature-item {
+            border: 1px solid var(--border-color); padding: 40px; transition: 0.4s; background: rgba(255, 255, 255, 0.02);
+        }
+        .feature-item:hover { border-color: #fff; transform: translateY(-5px); }
+        .feature-item h3 { font-size: 1.3rem; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .feature-item p { font-size: 0.95rem; opacity: 0.6; margin: 0; }
+
+        .update-note {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+            padding: 30px 40px; border-left: 4px solid #fff; position: relative;
+        }
+        .update-note strong { display: block; margin-bottom: 10px; font-size: 0.9rem; letter-spacing: 0.1em; }
+        .update-note p { font-size: 0.9rem; opacity: 0.5; margin-bottom: 15px; }
+        .note-link { font-size: 0.8rem; color: #fff; text-decoration: underline; opacity: 0.7; transition: 0.3s; }
+        .note-link:hover { opacity: 1; }
+
+        /* ========== DOWNLOAD TRIGGER ========== */
+        .download-trigger {
+            display: inline-block; padding: 20px 60px; background-color: #ffffff; color: #000000;
+            text-decoration: none; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+            transition: 0.4s; cursor: pointer; border: 1px solid #ffffff; font-family: inherit;
+        }
+        .download-trigger:hover { background-color: transparent; color: #ffffff; }
+
+        /* ========== VERSION SCREEN ========== */
+        #version-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background-color: #000;
+            z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 40px; box-sizing: border-box; opacity: 0; visibility: hidden; pointer-events: none;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #version-screen.is-active { opacity: 1; visibility: visible; pointer-events: auto; }
+        .version-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; max-width: 1200px; }
+        .version-card {
+            border: 1px solid var(--border-color); padding: 50px 30px; text-align: center;
+            transition: 0.4s; background: #050505; display: flex; flex-direction: column; justify-content: space-between; min-height: 250px;
+        }
+        .version-card:hover { border-color: #ffffff; transform: scale(1.02); }
+        .v-name { font-size: 2rem; font-weight: 700; margin-bottom: 10px; }
+        .v-desc { font-size: 0.85rem; opacity: 0.6; margin-bottom: 30px; }
+        .v-btn {
+            display: block; padding: 15px; border: 1px solid #ffffff; color: #fff;
+            font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+            cursor: pointer; background: transparent; font-family: inherit; transition: 0.3s;
+        }
+        .version-card:hover .v-btn { background: #fff; color: #000; }
+        .back-btn { margin-top: 60px; opacity: 0.4; cursor: pointer; background: none; border: none; color: #fff; font-family: inherit; text-transform: uppercase; letter-spacing: 0.2em; }
+        .back-btn:hover { opacity: 1; }
+
+        footer { padding: 80px 60px; text-align: center; opacity: 0.4; border-top: 1px solid var(--border-color); }
+
+        @keyframes logoFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 900px) { .feature-grid, .version-grid { grid-template-columns: 1fr; } #version-screen { overflow-y: auto; justify-content: flex-start; padding-top: 100px; } }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="header-left">
-            <div class="header-title">e3oT</div>
-            <div class="header-subtitle">3D ENGINE</div>
-        </div>
-        <nav>
-            <a href="#">Home</a>
-            <a href="#details">Features</a>
+    <header id="site-header">
+        <a href="#" class="js-close-download"><img src="https://dl.dropboxusercontent.com/scl/fi/xl14scf13qha3i3mwd538/e3logowhite-logotext-removebg-preview.png?rlkey=1qeowhmz0ncg8chgk6bl27su4&raw=1" alt="e3oT" class="header-logo-img"></a>
+        <nav class="nav-links">
+            <a href="#about">About</a>
+            <!-- ADDED: Note link in Navigation[cite: 1] -->
             <a href="https://note.com/soutam4/n/n57e421c96154" target="_blank">Note</a>
-            <a href="https://github.com/soutaM4/e3oT" target="_blank">Download</a>
+            <button class="nav-btn js-open-download">Download</button>
+            <a href="http://soutam4.f5.si" target="_blank">Developer</a>
         </nav>
     </header>
 
-    <section class="hero">
-        <h1>e3oT</h1>
-        <p>誰もが3Dを「使える」時代へ。</p>
-        <a href="#details" class="scroll-guide">
-            <span class="scroll-text">SCROLL</span>
-            <div class="arrow">↓</div>
-        </a>
-    </section>
+    <div id="main-site-content">
+        <main>
+            <section class="hero">
+                <div class="video-container">
+                    <video class="video-bg" autoplay muted loop playsinline><source src="https://dl.dropboxusercontent.com/scl/fi/cpmgwvv1ddvo95kfr7k4j/e3oT_pv-2.mp4?rlkey=wmhcqhcuzogbs0g56sctkmzjo&st=g2i42agr&raw=1" type="video/mp4"></video>
+                </div>
+                <div class="hero-content">
+                    <img src="https://dl.dropboxusercontent.com/scl/fi/xl14scf13qha3i3mwd538/e3logowhite-logotext-removebg-preview.png?rlkey=1qeowhmz0ncg8chgk6bl27su4&raw=1" alt="e3oT" class="hero-logo-img">
+                    <div class="hero-subtext">easy 3D on TurboWarp</div>
+                </div>
+                <a href="#about" class="scroll-hint">
+                    <span class="scroll-text">Scroll</span>
+                    <div class="scroll-arrow-box"></div>
+                </a>
+            </section>
 
-    <section class="content-section" id="details">
-        <h2>About e3oT</h2>
-        <p>
-            e3oTは、TurboWarp/Scratch上で動作する軽量かつパワフルな3Dエンジンです。<br>
-            <strong>ブラウザのみで完全動作が可能</strong>で、ハイスペックなPCや複雑な環境構築は一切不要。
-            開いたその瞬間から、あなたのブラウザが高度な3D制作スタジオに変わります。
-        </p>
+            <section id="about">
+                <div class="section-container">
+                    <h2>About e3oT</h2>
+                    <div class="about-intro">
+                        e3oTは、TurboWarp環境で動作する軽量かつパワフルな3Dエンジンです。<br>
+                        ブラウザのみで完全動作し、複雑な環境構築は不要。開いたその瞬間から、高度な3D制作が始まります。
+                    </div>
 
-        <div class="grid">
-            <div class="feature-box">
-                <h3>HTML化・アプリ化</h3>
-                <p>作成したプロジェクトは瞬時にHTML形式で書き出し可能。アプリのように配布したり、Webサイトに埋め込んだりすることができます。</p>
+                    <div class="feature-grid">
+                        <div class="feature-item">
+                            <h3>HTML Export</h3>
+                            <p>作成したプロジェクトは瞬時にHTML形式で書き出し可能。Webサイトへの埋め込みや配布も容易です[cite: 1]。</p>
+                        </div>
+                        <div class="feature-item">
+                            <h3>Asset Loading</h3>
+                            <p>Blender等で制作した .glb モデルを直接読み込み可能。即座にインタラクティブな作品へ昇華させます[cite: 1]。</p>
+                        </div>
+                        <div class="feature-item">
+                            <h3>Multi Device</h3>
+                            <p>PCからスマホまで場所を選ばず動作。自由なクリエイションをサポートします[cite: 1]。</p>
+                        </div>
+                        <div class="feature-item">
+                            <h3>Open Source</h3>
+                            <p>e3oTはオープンソースプロジェクトです。誰でも自由に利用でき、コミュニティと共に進化し続けています[cite: 1]。</p>
+                        </div>
+                    </div>
+
+                    <div class="update-note">
+                        <strong>v1.5+ : IMPORTANT NOTICE</strong>
+                        <p>1.5以降のバージョンでは、モデルを含むプロジェクトを共有する際、別途アセットのアップロードが必要です。共有時には適切なパス指定を行ってください[cite: 1]。</p>
+                        <!-- ADDED: Detailed link in Update Note[cite: 1] -->
+                        <a href="https://note.com/soutam4/n/n57e421c96154" target="_blank" class="note-link">詳細な共有方法を確認する →</a>
+                    </div>
+                </div>
+            </section>
+
+            <section style="text-align: center;">
+                <h2>Get Started</h2>
+                <button class="download-trigger js-open-download">Select Version</button>
+            </section>
+        </main>
+        <footer><p>&copy; 2026 soutam4. All rights reserved.</p></footer>
+    </div>
+
+    <div id="version-screen">
+        <div class="version-grid">
+            <div class="version-card">
+                <div>
+                    <div class="v-name">PHPRO</div>
+                    <div class="v-desc">Physically Based Professional</div>
+                </div>
+                <button class="v-btn js-auto-download" data-prefix="e3ot_phpro" data-fallback="https://raw.githubusercontent.com/soutaM4/e3oT/main/e3ot_phpro_v1.65.js">LATEST DOWNLOAD</button>
             </div>
-            <div class="feature-box">
-                <h3>モデル読み込みで広がる制作</h3>
-                <p>Blender等で制作した精巧な .glb モデルをそのまま読み込み。あなたのモデリングスキルを、インタラクティブな3D作品へと即座に昇華させます。</p>
+            <div class="version-card">
+                <div>
+                    <div class="v-name">LITE</div>
+                    <div class="v-desc">High Performance & Lightweight</div>
+                </div>
+                <button class="v-btn js-auto-download" data-prefix="e3ot_lite" data-fallback="https://raw.githubusercontent.com/soutaM4/e3oT/main/e3ot_lite_v1.5.js">LATEST DOWNLOAD</button>
             </div>
-            <div class="feature-box">
-                <h3>マルチデバイス対応</h3>
-                <p>ブラウザベースのため、PCだけでなくタブレットやスマートフォンでも動作。場所を選ばず、あなたの3D世界を共有・編集が可能です。</p>
-            </div>
-            <div class="feature-box">
-                <h3>オープンソース・フリー</h3>
-                <p>e3oTはオープンソースプロジェクトとして公開されており、誰でもフリーで利用可能です。透明性が高く、コミュニティと共に進化し続けます。</p>
+            <div class="version-card">
+                <div>
+                    <div class="v-name">MDLR</div>
+                    <div class="v-desc">Modular & Flexible Architecture</div>
+                </div>
+                <button class="v-btn js-auto-download" data-prefix="e3ot_mdlr" data-fallback="https://raw.githubusercontent.com/soutaM4/e3oT/main/e3ot_mdlr_v1.5.js">LATEST DOWNLOAD</button>
             </div>
         </div>
-
-        <div class="update-note">
-            <strong style="color: var(--primary);">v1.5 Update: 共有に関する重要なお知らせ</strong>
-            <p style="font-size: 0.95rem; color: #ccc; margin-top: 10px;">
-                1.5バージョン以降、モデルを含むプロジェクトを共有・公開する際は、モデルデータの別途アップロードが必要です。共有時には適切なパスの指定を行ってください。
-            </p>
-        </div>
-    </section>
-
-    <footer>
-        <p>&copy; 2026 e3oT Project by soutam4</p>
-    </footer>
+        <button class="back-btn js-close-download">← Back to Home</button>
+    </div>
 
     <script>
-        window.history.scrollRestoration = 'manual';
-        window.onload = function() { window.scrollTo(0, 0); };
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainContent = document.getElementById('main-site-content');
+            const versionScreen = document.getElementById('version-screen');
+            const autoButtons = document.querySelectorAll('.js-auto-download');
+            const video = document.querySelector('.video-bg');
+
+            const openDL = () => { mainContent.classList.add('is-hidden'); versionScreen.classList.add('is-active'); window.scrollTo(0,0); };
+            const closeDL = () => { 
+                mainContent.classList.remove('is-hidden'); 
+                versionScreen.classList.remove('is-active');
+                if (video) video.play().catch(e => console.log(e));
+            };
+            document.querySelectorAll('.js-open-download').forEach(b => b.onclick = openDL);
+            document.querySelectorAll('.js-close-download').forEach(b => b.onclick = closeDL);
+
+            const getVersion = (n) => { const m = n.match(/v(\d+(\.\d+)*)/); return m ? parseFloat(m[1]) : 0; };
+
+            autoButtons.forEach(btn => {
+                btn.onclick = async () => {
+                    const prefix = btn.dataset.prefix;
+                    const fallback = btn.dataset.fallback;
+                    const originalText = btn.textContent;
+                    btn.textContent = 'FETCHING...'; btn.disabled = true;
+
+                    try {
+                        const res = await fetch('https://api.github.com/repos/soutaM4/e3oT/contents/');
+                        if (!res.ok) throw new Error();
+                        const files = await res.json();
+                        const targets = files.filter(f => f.name.startsWith(prefix) && f.name.endsWith('.js'));
+                        targets.sort((a, b) => getVersion(b.name) - getVersion(a.name));
+
+                        const latest = targets[0];
+                        const dUrl = latest ? latest.download_url : fallback;
+                        const fName = latest ? latest.name : prefix + "_latest.js";
+
+                        const fRes = await fetch(dUrl);
+                        const text = await fRes.text();
+                        const blob = new Blob([text], { type: 'application/javascript' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = fName; document.body.appendChild(a);
+                        a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(url);
+                    } catch (e) {
+                        alert('Error. Opening direct link.');
+                        window.open(fallback, '_blank');
+                    } finally {
+                        btn.textContent = originalText; btn.disabled = false;
+                    }
+                };
+            });
+
+            if (video) video.play().catch(() => {
+                document.body.addEventListener('click', () => video.play(), { once: true });
+            });
+        });
     </script>
 </body>
 </html>
