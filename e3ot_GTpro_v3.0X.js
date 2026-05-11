@@ -488,7 +488,7 @@
     getInfo() {
       return {
         id: 'threedee',
-        name: '3D表示+物理+衝突',
+        name: 'e3oT-GTpro',
         color1: '#FF6B6B',
         color2: '#FF5252',
         blocks: [

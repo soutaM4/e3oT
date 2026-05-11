@@ -213,13 +213,13 @@
           {
             opcode: 'init',
             blockType: Scratch.BlockType.COMMAND,
-            text: '3Dを初期化する'
+            text: 'Initialize 3D'
           },
           '---',
           {
             opcode: 'addCube',
             blockType: Scratch.BlockType.COMMAND,
-            text: '立方体を追加 サイズ [SIZE] 色 [COLOR]',
+            text: 'Add cube  size [SIZE]  color [COLOR]',
             arguments: {
               SIZE: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -234,7 +234,7 @@
           {
             opcode: 'addSphere',
             blockType: Scratch.BlockType.COMMAND,
-            text: '球体を追加 半径 [RADIUS] 色 [COLOR]',
+            text: 'Add sphere  radius [RADIUS]  color [COLOR]',
             arguments: {
               RADIUS: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -249,7 +249,7 @@
           {
             opcode: 'addCylinder',
             blockType: Scratch.BlockType.COMMAND,
-            text: '円柱を追加 半径 [RADIUS] 高さ [HEIGHT] 色 [COLOR]',
+            text: 'Add cylinder  radius [RADIUS]  height [HEIGHT]  color [COLOR]',
             arguments: {
               RADIUS: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -268,7 +268,7 @@
           {
             opcode: 'addPlane',
             blockType: Scratch.BlockType.COMMAND,
-            text: '平面を追加 幅 [WIDTH] 高さ [HEIGHT] 色 [COLOR]',
+            text: 'Add plane  width [WIDTH]  height [HEIGHT]  color [COLOR]',
             arguments: {
               WIDTH: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -288,7 +288,7 @@
           {
             opcode: 'loadModelFile',
             blockType: Scratch.BlockType.COMMAND,
-            text: '3Dモデルファイルを読み込み 名前 [NAME]',
+            text: 'Load 3D model file  name [NAME]',
             arguments: {
               NAME: {
                 type: Scratch.ArgumentType.STRING,
@@ -299,7 +299,7 @@
           {
             opcode: 'addModelFromAsset',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'アセット [ASSET_ID] からモデルを追加 スケール [SCALE] 色 [COLOR] 透明度 [OPACITY] 明るさ [BRIGHTNESS]',
+            text: 'Add model from asset [ASSET_ID]  scale [SCALE]  color [COLOR]  opacity [OPACITY]  brightness [BRIGHTNESS]',
             arguments: {
               ASSET_ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -327,7 +327,7 @@
           {
             opcode: 'addModel',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'URLからモデルを追加 URL [URL] スケール [SCALE] 色 [COLOR] 透明度 [OPACITY] 明るさ [BRIGHTNESS]',
+            text: 'Add model from URL [URL]  scale [SCALE]  color [COLOR]  opacity [OPACITY]  brightness [BRIGHTNESS]',
             arguments: {
               URL: {
                 type: Scratch.ArgumentType.STRING,
@@ -356,7 +356,7 @@
           {
             opcode: 'enablePhysics',
             blockType: Scratch.BlockType.COMMAND,
-            text: '物理エンジンを [ENABLE] にする',
+            text: 'Set physics engine to [ENABLE]',
             arguments: {
               ENABLE: {
                 type: Scratch.ArgumentType.STRING,
@@ -368,7 +368,7 @@
           {
             opcode: 'setGravity',
             blockType: Scratch.BlockType.COMMAND,
-            text: '重力を x:[X] y:[Y] z:[Z] にする',
+            text: 'Set gravity  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               X: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -387,7 +387,7 @@
           {
             opcode: 'addPhysicsToObject',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] に物理を追加 種類 [TYPE] 質量 [MASS] 形状 [SHAPE]',
+            text: 'Add physics to object [ID]  type [TYPE]  mass [MASS]  shape [SHAPE]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -412,7 +412,7 @@
           {
             opcode: 'setObjectPhysicsType',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の物理タイプを [TYPE] にする',
+            text: 'Set physics type of object [ID] to [TYPE]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -428,7 +428,7 @@
           {
             opcode: 'removePhysicsFromObject',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] から物理を削除',
+            text: 'Remove physics from object [ID]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -439,7 +439,7 @@
           {
             opcode: 'setObjectRotationY',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] のY向きを [Y] 度にする',
+            text: 'Set Y rotation of object [ID] to [Y] degrees',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -454,7 +454,7 @@
           {
             opcode: 'lockRotation',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の向きの慣性を [ENABLE] にする',
+            text: 'Set rotation inertia of object [ID] to [ENABLE]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -470,7 +470,7 @@
           {
             opcode: 'setObjectVelocity',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の速度を x:[X] y:[Y] z:[Z] にする',
+            text: 'Set velocity of object [ID] to  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -493,7 +493,7 @@
           {
             opcode: 'setObjectPositionXZ',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] のXZ位置を x:[X] z:[Z] にする (Y位置を維持)',
+            text: 'Set XZ position of object [ID]  x:[X]  z:[Z]  (keep Y)',
             arguments: {
               ID: { type: Scratch.ArgumentType.NUMBER, defaultValue: 1 },
               X:  { type: Scratch.ArgumentType.NUMBER, defaultValue: 0 },
@@ -503,7 +503,7 @@
           {
             opcode: 'setObjectVelocityXZ',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] のXZ速度を x:[X] z:[Z] にする (Y速度を維持)',
+            text: 'Set XZ velocity of object [ID]  x:[X]  z:[Z]  (keep Y)',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -522,7 +522,7 @@
           {
             opcode: 'applyForce',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] に力を加える x:[X] y:[Y] z:[Z]',
+            text: 'Apply force to object [ID]  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -545,7 +545,7 @@
           {
             opcode: 'applyImpulse',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] に衝撃を加える x:[X] y:[Y] z:[Z]',
+            text: 'Apply impulse to object [ID]  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -568,7 +568,7 @@
           {
             opcode: 'setObjectMass',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の質量を [MASS] にする',
+            text: 'Set mass of object [ID] to [MASS]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -583,7 +583,7 @@
           {
             opcode: 'setObjectFriction',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の摩擦を [FRICTION] にする',
+            text: 'Set friction of object [ID] to [FRICTION]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -598,7 +598,7 @@
           {
             opcode: 'setObjectRestitution',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の反発係数を [RESTITUTION] にする',
+            text: 'Set restitution of object [ID] to [RESTITUTION]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -613,7 +613,7 @@
           {
             opcode: 'setColliderOffset',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の当たり判定位置オフセットを x:[X] y:[Y] z:[Z] にする',
+            text: 'Set collider offset of object [ID]  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -636,7 +636,7 @@
           {
             opcode: 'getColliderOffset',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'オブジェクト [ID] の当たり判定オフセット [AXIS]',
+            text: 'Collider offset [AXIS] of object [ID]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -652,7 +652,7 @@
           {
             opcode: 'setCollisionSize',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の当たり判定サイズを x:[X] y:[Y] z:[Z] にする',
+            text: 'Set collider size of object [ID]  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -675,7 +675,7 @@
           {
             opcode: 'getCollisionSize',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'オブジェクト [ID] の当たり判定サイズ [AXIS]',
+            text: 'Collider size [AXIS] of object [ID]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -691,7 +691,7 @@
           {
             opcode: 'showCollisionBox',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の当たり判定を表示 [SHOW]',
+            text: 'Show collider of object [ID]: [SHOW]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -708,7 +708,7 @@
           {
             opcode: 'isColliding',
             blockType: Scratch.BlockType.BOOLEAN,
-            text: 'オブジェクト [ID1] と [ID2] が衝突している',
+            text: 'Object [ID1] and [ID2] are colliding',
             arguments: {
               ID1: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -723,7 +723,7 @@
           {
             opcode: 'isCollidingWithAny',
             blockType: Scratch.BlockType.BOOLEAN,
-            text: 'オブジェクト [ID] が何かと衝突している',
+            text: 'Object [ID] is colliding with something',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -734,7 +734,7 @@
           {
             opcode: 'getLastCollisionPartner',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'オブジェクト [ID] が最後に衝突した相手のID',
+            text: 'ID of last object [ID] collided with',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -745,13 +745,13 @@
           {
             opcode: 'clearCollisionHistory',
             blockType: Scratch.BlockType.COMMAND,
-            text: '衝突リストをクリア'
+            text: 'Clear collision list'
           },
           '---',
           {
             opcode: 'setObjectPosition',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の位置を x:[X] y:[Y] z:[Z] にする',
+            text: 'Set position of object [ID] to  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -774,7 +774,7 @@
           {
             opcode: 'moveObject',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] を x:[X] y:[Y] z:[Z] だけ移動',
+            text: 'Move object [ID] by  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -797,7 +797,7 @@
           {
             opcode: 'setObjectRotation',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の向きを x:[X] y:[Y] z:[Z] 度にする',
+            text: 'Set rotation of object [ID] to  x:[X]  y:[Y]  z:[Z] degrees',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -820,7 +820,7 @@
           {
             opcode: 'rotateObject',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] を x:[X] y:[Y] z:[Z] 度回転',
+            text: 'Rotate object [ID] by  x:[X]  y:[Y]  z:[Z] degrees',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -843,7 +843,7 @@
           {
             opcode: 'setObjectScale',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の大きさを x:[X] y:[Y] z:[Z] 倍にする',
+            text: 'Set scale of object [ID] to  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -866,7 +866,7 @@
           {
             opcode: 'setObjectColor',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の色を [COLOR] にする',
+            text: 'Set color of object [ID] to [COLOR]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -881,7 +881,7 @@
           {
             opcode: 'setObjectOpacity',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の透明度を [OPACITY] にする',
+            text: 'Set opacity of object [ID] to [OPACITY]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -896,7 +896,7 @@
           {
             opcode: 'setObjectBrightness',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] の明るさを [BRIGHTNESS] にする',
+            text: 'Set brightness of object [ID] to [BRIGHTNESS]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -911,7 +911,7 @@
           {
             opcode: 'removeObject',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'オブジェクト [ID] を削除',
+            text: 'Delete object [ID]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -923,7 +923,7 @@
           {
             opcode: 'followObjectWithCamera',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'カメラでオブジェクト [ID] を 向きオフセット +x [ANGLE] 度で x:[X] y:[Y] z:[Z] のオフセットで追尾',
+            text: 'Camera follow object [ID]  angle offset [ANGLE] deg  offset x:[X] y:[Y] z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -950,7 +950,7 @@
           {
             opcode: 'setCameraPosition',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'カメラの位置を x:[X] y:[Y] z:[Z] にする',
+            text: 'Set camera position to  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               X: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -969,7 +969,7 @@
           {
             opcode: 'moveCamera',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'カメラを x:[X] y:[Y] z:[Z] だけ移動',
+            text: 'Move camera by  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               X: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -988,7 +988,7 @@
           {
             opcode: 'setCameraRotation',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'カメラの向きを x:[X] y:[Y] z:[Z] 度にする',
+            text: 'Set camera rotation to  x:[X]  y:[Y]  z:[Z] degrees',
             arguments: {
               X: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -1007,7 +1007,7 @@
           {
             opcode: 'lookAtObject',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'カメラでオブジェクト [ID] を見る',
+            text: 'Look at object [ID] with camera',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -1018,7 +1018,7 @@
           {
             opcode: 'lookAtPosition',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'カメラで位置 x:[X] y:[Y] z:[Z] を見る',
+            text: 'Look at position  x:[X]  y:[Y]  z:[Z] with camera',
             arguments: {
               X: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -1038,7 +1038,7 @@
           {
             opcode: 'set3DDepth',
             blockType: Scratch.BlockType.COMMAND,
-            text: '3Dの表示位置を [DEPTH] にする',
+            text: 'Set 3D layer position to [DEPTH]',
             arguments: {
               DEPTH: {
                 type: Scratch.ArgumentType.STRING,
@@ -1050,7 +1050,7 @@
           {
             opcode: 'setSkyColor',
             blockType: Scratch.BlockType.COMMAND,
-            text: '空の色を [COLOR] グラデーション強さ [STRENGTH] 範囲 [SIZE] にする',
+            text: 'Set sky color to [COLOR]  gradient strength [STRENGTH]  range [SIZE]',
             arguments: {
               COLOR: {
                 type: Scratch.ArgumentType.COLOR,
@@ -1069,7 +1069,7 @@
           {
             opcode: 'setSkyEnabled',
             blockType: Scratch.BlockType.COMMAND,
-            text: '空の表示を [STATE] にする',
+            text: 'Set sky visibility to [STATE]',
             arguments: {
               STATE: {
                 type: Scratch.ArgumentType.STRING,
@@ -1081,7 +1081,7 @@
           {
             opcode: 'set3DOpacity',
             blockType: Scratch.BlockType.COMMAND,
-            text: '3Dの透明度を [OPACITY] にする',
+            text: 'Set 3D opacity to [OPACITY]',
             arguments: {
               OPACITY: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -1092,7 +1092,7 @@
           {
             opcode: 'setBlendMode',
             blockType: Scratch.BlockType.COMMAND,
-            text: '3Dの合成モードを [MODE] にする',
+            text: 'Set 3D blend mode to [MODE]',
             arguments: {
               MODE: {
                 type: Scratch.ArgumentType.STRING,
@@ -1104,7 +1104,7 @@
           {
             opcode: 'enable3DRendering',
             blockType: Scratch.BlockType.COMMAND,
-            text: '3D描画を [ENABLE] にする',
+            text: 'Set 3D rendering to [ENABLE]',
             arguments: {
               ENABLE: {
                 type: Scratch.ArgumentType.STRING,
@@ -1116,7 +1116,7 @@
           {
             opcode: 'enableLuminanceMask',
             blockType: Scratch.BlockType.COMMAND,
-            text: '白(輝度)マスクで3Dを表示 [ENABLE]',
+            text: 'Show 3D with luminance mask [ENABLE]',
             arguments: {
               ENABLE: { type: Scratch.ArgumentType.STRING, menu: 'enableOptions', defaultValue: 'off' }
             }
@@ -1124,7 +1124,7 @@
           {
             opcode: 'setLuminanceMaskThreshold',
             blockType: Scratch.BlockType.COMMAND,
-            text: '白判定のしきい値(0~1)を [THRESHOLD] にする',
+            text: 'Set white threshold (0~1) to [THRESHOLD]',
             arguments: {
               THRESHOLD: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0.8 }
             }
@@ -1132,7 +1132,7 @@
           {
             opcode: 'setLuminanceMaskFeather',
             blockType: Scratch.BlockType.COMMAND,
-            text: '境界のやわらかさ(0~1)を [FEATHER] にする',
+            text: 'Set edge softness (0~1) to [FEATHER]',
             arguments: {
               FEATHER: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0.1 }
             }
@@ -1140,7 +1140,7 @@
           {
             opcode: 'setLuminanceMaskUpdateInterval',
             blockType: Scratch.BlockType.COMMAND,
-            text: '白判定の更新間隔(ms)を [INTERVAL] にする',
+            text: 'Set mask update interval (ms) to [INTERVAL]',
             arguments: {
               INTERVAL: { type: Scratch.ArgumentType.NUMBER, defaultValue: 50 }
             }
@@ -1148,7 +1148,7 @@
           {
             opcode: 'debugMask',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'マスクデバッグ表示 [ENABLE]',
+            text: 'Show mask debug view [ENABLE]',
             arguments: {
               ENABLE: { type: Scratch.ArgumentType.STRING, menu: 'enableOptions', defaultValue: 'off' }
             }
@@ -1156,7 +1156,7 @@
           {
             opcode: 'checkWhitePixels',
             blockType: Scratch.BlockType.REPORTER,
-            text: '白ピクセルの割合(%) しきい値:[THRESHOLD]',
+            text: 'White pixel ratio (%)  threshold:[THRESHOLD]',
             arguments: {
               THRESHOLD: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0.7 }
             }
@@ -1164,13 +1164,13 @@
           {
             opcode: 'debugSourceCanvas',
             blockType: Scratch.BlockType.COMMAND,
-            text: '入力元キャンバスの情報をデバッグ表示'
+            text: 'Debug info of input canvas'
           },
           '---',
           {
             opcode: 'addLight',
             blockType: Scratch.BlockType.COMMAND,
-            text: '[TYPE] ライトを追加 色 [COLOR] 強度 [INTENSITY]',
+            text: 'Add [TYPE] light  color [COLOR]  intensity [INTENSITY]',
             arguments: {
               TYPE: {
                 type: Scratch.ArgumentType.STRING,
@@ -1190,7 +1190,7 @@
           {
             opcode: 'setLightPosition',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'ライト [ID] の位置を x:[X] y:[Y] z:[Z] にする',
+            text: 'Set light [ID] position to  x:[X]  y:[Y]  z:[Z]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -1213,7 +1213,7 @@
           {
             opcode: 'setupCSM',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'CSM影を設定する カスケード数:[CASCADES] 最大距離:[DISTANCE] 解像度:[MAPSIZE]',
+            text: 'Configure CSM shadow  cascades:[CASCADES]  max distance:[DISTANCE]  resolution:[MAPSIZE]',
             arguments: {
               CASCADES: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -1232,7 +1232,7 @@
           {
             opcode: 'enableCSM',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'CSM影を [ENABLE] にする',
+            text: 'Set CSM shadow to [ENABLE]',
             arguments: {
               ENABLE: {
                 type: Scratch.ArgumentType.STRING,
@@ -1245,7 +1245,7 @@
           {
             opcode: 'removeModelAsset',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'アセット [ASSET_ID] を削除',
+            text: 'Delete asset [ASSET_ID]',
             arguments: {
               // 変更: menu: 'modelAssets'を削除し、typeをNUMBERに変更
               ASSET_ID: {
@@ -1257,12 +1257,12 @@
           {
             opcode: 'listModelAssets',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'モデルアセット一覧'
+            text: 'List model assets'
           },
           {
             opcode: 'getModelAssetName',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'アセット [ASSET_ID] の名前',
+            text: 'Name of asset [ASSET_ID]',
             arguments: {
               // 変更: menu: 'modelAssets'を削除し、typeをNUMBERに変更
               ASSET_ID: {
@@ -1274,12 +1274,12 @@
           {
             opcode: 'exportProjectData',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'プロジェクトデータを書き出し'
+            text: 'Export project data'
           },
           {
             opcode: 'importProjectData',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'プロジェクトデータを読み込み [DATA]',
+            text: 'Import project data [DATA]',
             arguments: {
               DATA: {
                 type: Scratch.ArgumentType.STRING,
@@ -1291,17 +1291,17 @@
           {
             opcode: 'getObjectCount',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'オブジェクト数'
+            text: 'Object count'
           },
           {
             opcode: 'getLastObjectId',
             blockType: Scratch.BlockType.REPORTER,
-            text: '最後に作成したオブジェクトのID'
+            text: 'ID of last created object'
           },
           {
             opcode: 'getObjectPosition',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'オブジェクト [ID] の [AXIS] 座標',
+            text: '[AXIS] position of object [ID]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -1317,7 +1317,7 @@
           {
             opcode: 'getObjectVelocity',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'オブジェクト [ID] の [AXIS] 速度',
+            text: '[AXIS] velocity of object [ID]',
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -1333,7 +1333,7 @@
           {
             opcode: 'getCameraPosition',
             blockType: Scratch.BlockType.REPORTER,
-            text: 'カメラの [AXIS] 座標',
+            text: 'Camera [AXIS] position',
             arguments: {
               AXIS: {
                 type: Scratch.ArgumentType.STRING,
@@ -1346,54 +1346,54 @@
           {
             opcode: 'clearScene',
             blockType: Scratch.BlockType.COMMAND,
-            text: 'すべての3Dオブジェクトを削除'
+            text: 'Delete all 3D objects'
           },
           {
             opcode: 'pause3D',
             blockType: Scratch.BlockType.COMMAND,
-            text: '3D描画を一時停止'
+            text: 'Pause 3D rendering'
           },
           {
             opcode: 'resume3D',
             blockType: Scratch.BlockType.COMMAND,
-            text: '3D描画を再開'
+            text: 'Resume 3D rendering'
           }
         ],
         menus: {
           depthModes: {
             acceptReporters: false,
             items: [
-              { text: '最前面', value: 'front' },
-              { text: '最背面', value: 'back' },
-              { text: 'スプライトの後ろ', value: 'behind' }
+              { text: 'Front', value: 'front' },
+              { text: 'Back', value: 'back' },
+              { text: 'Behind sprites', value: 'behind' }
             ]
           },
           blendModes: {
             acceptReporters: false,
             items: [
-              { text: '通常', value: 'normal' },
-              { text: '乗算', value: 'multiply' },
-              { text: 'スクリーン', value: 'screen' },
-              { text: 'オーバーレイ', value: 'overlay' },
-              { text: 'ソフトライト', value: 'soft-light' },
-              { text: 'ハードライト', value: 'hard-light' },
-              { text: '差', value: 'difference' },
-              { text: '除外', value: 'exclusion' }
+              { text: 'Normal', value: 'normal' },
+              { text: 'Multiply', value: 'multiply' },
+              { text: 'Screen', value: 'screen' },
+              { text: 'Overlay', value: 'overlay' },
+              { text: 'Soft Light', value: 'soft-light' },
+              { text: 'Hard Light', value: 'hard-light' },
+              { text: 'Difference', value: 'difference' },
+              { text: 'Exclusion', value: 'exclusion' }
             ]
           },
           enableOptions: {
             acceptReporters: false,
             items: [
-              { text: 'オン', value: 'on' },
-              { text: 'オフ', value: 'off' }
+              { text: 'On', value: 'on' },
+              { text: 'Off', value: 'off' }
             ]
           },
           lightTypes: {
             acceptReporters: false,
             items: [
-              { text: '平行光源', value: 'directional' },
-              { text: '点光源', value: 'point' },
-              { text: '環境光', value: 'ambient' }
+              { text: 'Directional', value: 'directional' },
+              { text: 'Point', value: 'point' },
+              { text: 'Ambient', value: 'ambient' }
             ]
           },
           axes: {
@@ -1407,25 +1407,25 @@
           colorOptions: {
             acceptReporters: true,
             items: [
-              { text: '元の色', value: 'default' },
-              { text: 'カスタム', value: 'custom' }
+              { text: 'Default color', value: 'default' },
+              { text: 'Custom', value: 'custom' }
             ]
           },
           physicsShapes: {
             acceptReporters: false,
             items: [
-              { text: '箱型', value: 'box' },
-              { text: '球型', value: 'sphere' },
-              { text: '円柱型', value: 'cylinder' },
-              { text: '平面型', value: 'plane' },
-              { text: 'メッシュ (静的)', value: 'trimesh' }
+              { text: 'Box', value: 'box' },
+              { text: 'Sphere', value: 'sphere' },
+              { text: 'Cylinder', value: 'cylinder' },
+              { text: 'Plane', value: 'plane' },
+              { text: 'Mesh (static)', value: 'trimesh' }
             ]
           },
           physicsTypes: {
             acceptReporters: false,
             items: [
-              { text: '動的', value: 'dynamic' },
-              { text: '静的', value: 'static' }
+              { text: 'Dynamic', value: 'dynamic' },
+              { text: 'Static', value: 'static' }
             ]
           }
         }
