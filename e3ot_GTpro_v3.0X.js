@@ -5295,6 +5295,7 @@
                 }
               }
             }
+          } // if (this.world && this.RAPIER)
 
           // --- Y速度を自前管理（重力オフの代わりに手動で重力・サスペンション適用）---
           const gravity = this.world?.gravity?.y ?? -9.82;
