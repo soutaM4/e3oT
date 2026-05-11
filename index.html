@@ -1,7 +1,8 @@
 <!DOCTYPE html>
+<!-- saved from url=(0026)http://soutam4.f5.si/e3oT/ -->
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>e3oT - easy 3D on TurboWarp</title>
 
@@ -100,6 +101,15 @@
         .note-link { font-size: 0.8rem; color: #fff; text-decoration: underline; opacity: 0.7; transition: 0.3s; }
         .note-link:hover { opacity: 1; }
 
+        .hero-dl-btn {
+            display: inline-block; margin-top: 50px;
+            color: #000; background: #fff; text-decoration: none;
+            font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase;
+            font-weight: 700; padding: 14px 40px; border-radius: 999px;
+            transition: 0.3s;
+        }
+        .hero-dl-btn:hover { background: rgba(255,255,255,0.8); }
+
         .download-trigger {
             display: inline-block; padding: 20px 60px; background-color: #ffffff; color: #000000;
             text-decoration: none; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
@@ -115,12 +125,18 @@
         }
         #version-screen.is-active { opacity: 1; visibility: visible; pointer-events: auto; }
         .version-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 20px; width: 100%; max-width: 1200px; 
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px; width: 100%; max-width: 1400px; 
         }
         .version-card {
-            border: 1px solid var(--border-color); padding: 50px 30px; text-align: center;
+            flex: 1 1 180px;
+            max-width: 220px;
+        }
+        .version-card {
+            border: 1px solid var(--border-color); padding: 40px 20px; text-align: center;
             transition: 0.4s; background: #050505; display: flex; flex-direction: column; justify-content: space-between; min-height: 250px;
         }
         .version-card:hover { border-color: #ffffff; transform: scale(1.02); }
@@ -137,19 +153,61 @@
 
         footer { padding: 80px 60px; text-align: center; opacity: 0.4; border-top: 1px solid var(--border-color); }
 
+
+        /* Stats Screen */
+        #stats-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background-color: #000;
+            z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 40px; box-sizing: border-box; opacity: 0; visibility: hidden; pointer-events: none;
+            transition: opacity 0.5s ease, visibility 0.5s ease; overflow-y: auto;
+        }
+        #stats-screen.is-active { opacity: 1; visibility: visible; pointer-events: auto; }
+        .stats-container { width: 100%; max-width: 900px; }
+        .stats-title { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px; }
+        .stats-subtitle { font-size: 0.8rem; opacity: 0.4; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 60px; }
+        .stats-total {
+            border: 1px solid var(--border-color); padding: 40px; margin-bottom: 30px;
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.02);
+        }
+        .stats-total-label { font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.5; }
+        .stats-total-num { font-size: 3.5rem; font-weight: 700; letter-spacing: 0.05em; }
+        .stats-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 50px; }
+        .stats-row {
+            border: 1px solid var(--border-color); padding: 24px 30px;
+            display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 20px;
+            background: rgba(255,255,255,0.02); transition: 0.3s;
+        }
+        .stats-row:hover { border-color: rgba(255,255,255,0.4); }
+        .stats-row-left { display: flex; flex-direction: column; gap: 4px; }
+        .stats-row-name { font-size: 1rem; font-weight: 700; letter-spacing: 0.05em; }
+        .stats-row-tag { font-size: 0.75rem; opacity: 0.4; letter-spacing: 0.1em; text-transform: uppercase; }
+        .stats-row-count { font-size: 1.8rem; font-weight: 700; text-align: right; }
+        .stats-row-count span { font-size: 0.7rem; opacity: 0.4; display: block; text-align: right; letter-spacing: 0.1em; }
+        .stats-loading { opacity: 0.4; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; padding: 60px 0; }
+        .stats-error { opacity: 0.5; font-size: 0.85rem; text-align: center; padding: 40px 0; }
+        .stats-refresh { 
+            background: none; border: 1px solid rgba(255,255,255,0.3); color: #fff; 
+            padding: 10px 24px; font-family: inherit; font-size: 0.75rem; letter-spacing: 0.15em;
+            text-transform: uppercase; cursor: pointer; transition: 0.3s; margin-bottom: 20px;
+        }
+        .stats-refresh:hover { border-color: #fff; }
+
         @keyframes logoFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 900px) { .feature-grid { grid-template-columns: 1fr; } #version-screen { overflow-y: auto; justify-content: flex-start; padding-top: 100px; } }
+        @media (max-width: 900px) { .feature-grid { grid-template-columns: 1fr; } #version-screen { overflow-y: auto; justify-content: flex-start; padding-top: 100px; } .version-grid { flex-direction: column; align-items: center; } .version-card { max-width: 400px; width: 100%; } }
     </style>
 </head>
 <body>
 
     <header id="site-header">
-        <a href="#" class="js-close-download"><img src="https://dl.dropboxusercontent.com/scl/fi/xl14scf13qha3i3mwd538/e3logowhite-logotext-removebg-preview.png?rlkey=1qeowhmz0ncg8chgk6bl27su4&raw=1" alt="e3oT" class="header-logo-img"></a>
+        <a href="#" class="js-close-download"><img src="./e3oT - easy 3D on TurboWarp_files/e3logowhite-+logotext-removebg-preview.png" alt="e3oT" class="header-logo-img"></a>
         <nav class="nav-links">
             <a href="#about">About</a>
             <a href="https://note.com/soutam4/n/n57e421c96154" target="_blank">Note</a>
-            <button class="nav-btn js-open-download">Download</button>
-            <a href="http://soutam4.f5.si" target="_blank">Developer</a>
+            <a class="nav-btn" href="https://github.com/soutaM4/e3oT/releases" target="_blank">Download</a>
+            <a class="nav-btn" href="http://soutam4.f5.si/e3car" target="_blank">Try e3car</a>
+            <button class="nav-btn js-open-stats">Stats</button>
+            <a href="http://soutam4.f5.si/" target="_blank">Developer</a>
         </nav>
     </header>
 
@@ -157,11 +215,12 @@
         <main>
             <section class="hero">
                 <div class="video-container">
-                    <video class="video-bg" autoplay muted loop playsinline><source src="https://dl.dropboxusercontent.com/scl/fi/cpmgwvv1ddvo95kfr7k4j/e3oT_pv-2.mp4?rlkey=wmhcqhcuzogbs0g56sctkmzjo&st=g2i42agr&raw=1" type="video/mp4"></video>
+                    <video class="video-bg" autoplay="" muted="" loop="" playsinline=""><source src="https://dl.dropboxusercontent.com/scl/fi/cpmgwvv1ddvo95kfr7k4j/e3oT_pv-2.mp4?rlkey=wmhcqhcuzogbs0g56sctkmzjo&st=g2i42agr&raw=1" type="video/mp4"></video>
                 </div>
                 <div class="hero-content">
-                    <img src="https://dl.dropboxusercontent.com/scl/fi/xl14scf13qha3i3mwd538/e3logowhite-logotext-removebg-preview.png?rlkey=1qeowhmz0ncg8chgk6bl27su4&raw=1" alt="e3oT" class="hero-logo-img">
+                    <img src="./e3oT - easy 3D on TurboWarp_files/e3logowhite-+logotext-removebg-preview.png" alt="e3oT" class="hero-logo-img">
                     <div class="hero-subtext">easy 3D on TurboWarp</div>
+                    <a href="https://github.com/soutaM4/e3oT/releases" target="_blank" class="hero-dl-btn">↓ Download</a>
                 </div>
                 <a href="#about" class="scroll-hint">
                     <span class="scroll-text">Scroll</span>
@@ -180,69 +239,89 @@
                     <div class="feature-grid">
                         <div class="feature-item">
                             <h3>HTML Export</h3>
-                            <p>作成したプロジェクトは瞬時にHTML形式で書き出し可能。Webサイトへの埋め込みや配布も容易です[cite: 1]。</p>
+                            <p>作成したプロジェクトは瞬時にHTML形式で書き出し可能。Webサイトへの埋め込みや配布も容易です。</p>
                         </div>
                         <div class="feature-item">
-                            <h3>Asset Loading</h3>
-                            <p>Blender等で制作した .glb モデルを直接読み込み可能。即座にインタラクティブな作品へ昇華させます[cite: 1]。</p>
+                            <h3>Model Loading</h3>
+                            <p>Blender等で制作した .glb モデルを直接読み込み可能。即座にインタラクティブな作品へ昇華させます。</p>
                         </div>
                         <div class="feature-item">
                             <h3>Multi Device</h3>
-                            <p>PCからスマホまで場所を選ばず動作。自由なクリエイションをサポートします[cite: 1]。</p>
+                            <p>PCからスマホまで場所を選ばず動作。自由なクリエイションをサポートします。</p>
                         </div>
                         <div class="feature-item">
                             <h3>Open Source</h3>
-                            <p>e3oTはオープンソースプロジェクトです。誰でも自由に利用でき、コミュニティと共に進化し続けています[cite: 1]。</p>
+                            <p>e3oTはオープンソースプロジェクトです。誰でも自由に利用でき、コミュニティと共に進化し続けています。</p>
                         </div>
                     </div>
 
                     <div class="update-note">
                         <strong>v1.5+ : IMPORTANT NOTICE</strong>
-                        <p>1.5以降のバージョンでは、モデルを含むプロジェクトを共有する際、別途アセットのアップロードが必要です。共有時には適切なパス指定を行ってください[cite: 1]。</p>
-                        <a href="https://note.com/soutam4/n/n57e421c96154" target="_blank" class="note-link">詳細な共有方法を確認する →</a>
+                        <p>1.5以降のバージョンでは、モデルを含むプロジェクトを共有する際、別途モデルのアップロードが必要です。共有時には適切なURLの指定を行ってください。</p>
                     </div>
                 </div>
             </section>
 
             <section style="text-align: center;">
                 <h2>Get Started</h2>
-                <button class="download-trigger js-open-download">Select Version</button>
+                <a class="download-trigger" href="https://github.com/soutaM4/e3oT/releases" target="_blank">Select Version</a>
             </section>
         </main>
-        <footer><p>&copy; 2026 soutam4. All rights reserved.</p></footer>
+        <footer><p>© 2026 soutam4. All rights reserved.</p></footer>
+    </div>
+
+    <div id="stats-screen">
+        <div class="stats-container">
+            <div class="stats-title">Download Stats</div>
+            <div class="stats-subtitle" id="stats-updated">Loading...</div>
+            <div id="stats-body">
+                <div class="stats-loading">Fetching data from GitHub...</div>
+            </div>
+            <button class="stats-refresh" id="stats-refresh-btn">↻ Refresh</button>
+            <button class="back-btn js-close-stats">← Back to Home</button>
+        </div>
     </div>
 
     <div id="version-screen">
         <div class="version-grid">
             <div class="version-card">
                 <div>
-                    <div class="v-name">PHPRO</div>
-                    <div class="v-desc">Physically Based Professional</div>
+                    <div class="v-name">GTPRO</div>
+                    <div class="v-desc">Graphics Turbo Professional</div>
                 </div>
-                <button class="v-btn js-auto-download" data-prefix="e3ot_phpro" data-fallback="https://raw.githubusercontent.com/soutaM4/e3oT/main/e3ot_phpro_v1.65.js">LATEST DOWNLOAD</button>
+                <a class="v-btn" href="https://github.com/soutaM4/e3oT/releases/tag/v3.0" target="_blank">LATEST DOWNLOAD</a>
             </div>
-            <!-- raipro 項目[cite: 1, 4] -->
+
             <div class="version-card">
                 <div>
                     <div class="v-name">RAIPRO</div>
-                    <div class="v-desc">Rapier Physics Professional (Beta)</div>
+                    <div class="v-desc">Rapier Physics Professional</div>
                 </div>
-                <!-- 教えてくれたURLをRaw形式に変換してセット[cite: 4] -->
-                <button class="v-btn js-auto-download" data-prefix="e3ot_raipro" data-fallback="https://raw.githubusercontent.com/soutaM4/e3oT/main/e3ot_raipro_v2.0x-%CE%B2.js" data-beta="true">LATEST DOWNLOAD</button>
+                <a class="v-btn" href="https://github.com/soutaM4/e3oT/releases/tag/v3.0" target="_blank">LATEST DOWNLOAD</a>
             </div>
+
             <div class="version-card">
                 <div>
                     <div class="v-name">LITE</div>
                     <div class="v-desc">High Performance & Lightweight</div>
                 </div>
-                <button class="v-btn js-auto-download" data-prefix="e3ot_lite" data-fallback="https://raw.githubusercontent.com/soutaM4/e3oT/main/e3ot_lite_v1.5.js">LATEST DOWNLOAD</button>
+                <a class="v-btn" href="https://github.com/soutaM4/e3oT/releases/tag/Old_release" target="_blank">DOWNLOAD</a>
             </div>
+
             <div class="version-card">
                 <div>
                     <div class="v-name">MDLR</div>
                     <div class="v-desc">Modular & Flexible Architecture</div>
                 </div>
-                <button class="v-btn js-auto-download" data-prefix="e3ot_mdlr" data-fallback="https://raw.githubusercontent.com/soutaM4/e3oT/main/e3ot_mdlr_v1.5.js">LATEST DOWNLOAD</button>
+                <a class="v-btn" href="https://github.com/soutaM4/e3oT/releases/tag/Old_release" target="_blank">DOWNLOAD</a>
+            </div>
+
+            <div class="version-card">
+                <div>
+                    <div class="v-name">PHPRO</div>
+                    <div class="v-desc">Physically Based Professional</div>
+                </div>
+                <a class="v-btn" href="https://github.com/soutaM4/e3oT/releases/tag/Old_release" target="_blank">DOWNLOAD</a>
             </div>
         </div>
         <button class="back-btn js-close-download">← Back to Home</button>
@@ -252,58 +331,76 @@
         document.addEventListener('DOMContentLoaded', () => {
             const mainContent = document.getElementById('main-site-content');
             const versionScreen = document.getElementById('version-screen');
-            const autoButtons = document.querySelectorAll('.js-auto-download');
             const video = document.querySelector('.video-bg');
 
-            const openDL = () => { mainContent.classList.add('is-hidden'); versionScreen.classList.add('is-active'); window.scrollTo(0,0); };
+            const openDL = () => { 
+                mainContent.classList.add('is-hidden'); 
+                versionScreen.classList.add('is-active'); 
+                window.scrollTo(0,0); 
+            };
             const closeDL = () => { 
                 mainContent.classList.remove('is-hidden'); 
                 versionScreen.classList.remove('is-active');
                 if (video) video.play().catch(e => console.log(e));
             };
+
+
+            // Stats Screen
+            const statsScreen = document.getElementById('stats-screen');
+            const statsBody = document.getElementById('stats-body');
+            const statsUpdated = document.getElementById('stats-updated');
+
+            const REPO = 'soutaM4/e3oT';
+
+            const openStats = async () => {
+                mainContent.classList.add('is-hidden');
+                statsScreen.classList.add('is-active');
+                window.scrollTo(0, 0);
+                await loadStats();
+            };
+            const closeStats = () => {
+                mainContent.classList.remove('is-hidden');
+                statsScreen.classList.remove('is-active');
+                if (video) video.play().catch(e => console.log(e));
+            };
+
+            document.querySelectorAll('.js-open-stats').forEach(b => b.onclick = openStats);
+            document.querySelectorAll('.js-close-stats').forEach(b => b.onclick = closeStats);
+            document.getElementById('stats-refresh-btn').onclick = loadStats;
+
+            async function loadStats() {
+                statsBody.innerHTML = '<div class="stats-loading">Fetching data from GitHub...</div>';
+                statsUpdated.textContent = 'Loading...';
+                try {
+                    // 全リリースを自動取得（新リリース追加時も自動対応）
+                    const releases = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`)
+                        .then(r => r.ok ? r.json() : []);
+
+                    let total = 0;
+                    releases.forEach(release => {
+                        (release.assets || []).forEach(a => {
+                            total += a.download_count;
+                        });
+                    });
+
+                    const now = new Date().toLocaleString('ja-JP');
+                    const html = `
+                        <div class="stats-total">
+                            <div class="stats-total-label">Total Downloads</div>
+                            <div class="stats-total-num">${total.toLocaleString()}</div>
+                        </div>
+                    `;
+                    statsBody.innerHTML = html;
+                    statsUpdated.textContent = `Last updated: ${now}`;
+                } catch(e) {
+                    statsBody.innerHTML = '<div class="stats-error">データの取得に失敗しました。しばらく待ってから再試行してください。</div>';
+                    statsUpdated.textContent = 'Error';
+                }
+            }
+
             document.querySelectorAll('.js-open-download').forEach(b => b.onclick = openDL);
             document.querySelectorAll('.js-close-download').forEach(b => b.onclick = closeDL);
 
-            const getVersion = (n) => { const m = n.match(/v(\d+(\.\d+)*)/); return m ? parseFloat(m[1]) : 0; };
-
-            autoButtons.forEach(btn => {
-                btn.onclick = async () => {
-                    // ベータポップアップ[cite: 4]
-                    if (btn.dataset.beta === "true") {
-                        alert("raiproはベータ版です。予期せぬ挙動が発生する可能性があります。");
-                    }
-
-                    const prefix = btn.dataset.prefix;
-                    const fallback = btn.dataset.fallback;
-                    const originalText = btn.textContent;
-                    btn.textContent = 'FETCHING...'; btn.disabled = true;
-
-                    try {
-                        const res = await fetch('https://api.github.com/repos/soutaM4/e3oT/contents/');
-                        if (!res.ok) throw new Error();
-                        const files = await res.json();
-                        const targets = files.filter(f => f.name.startsWith(prefix) && f.name.endsWith('.js'));
-                        targets.sort((a, b) => getVersion(b.name) - getVersion(a.name));
-
-                        const latest = targets[0];
-                        const dUrl = latest ? latest.download_url : fallback;
-                        const fName = latest ? latest.name : prefix + "_latest.js";
-
-                        const fRes = await fetch(dUrl);
-                        const text = await fRes.text();
-                        const blob = new Blob([text], { type: 'application/javascript' });
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url; a.download = fName; document.body.appendChild(a);
-                        a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(url);
-                    } catch (e) {
-                        alert('Error. Opening direct link.');
-                        window.open(fallback, '_blank');
-                    } finally {
-                        btn.textContent = originalText; btn.disabled = false;
-                    }
-                };
-            });
 
             if (video) video.play().catch(() => {
                 document.body.addEventListener('click', () => video.play(), { once: true });
