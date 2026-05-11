@@ -43,19 +43,6 @@
       this.skyGradientStrength = 1.0;  // グラデーション強さ (0〜1)
       this.skyGradientSize = 1.0;      // グラデーションのかかる範囲 (0〜1)
       
-      // liteから移植: ルミナンスマスク設定
-      this.luminanceMaskEnabled = false;
-      this.luminanceMaskThreshold = 0.8;
-      this.luminanceMaskFeather = 0.1;
-      this.luminanceMaskUpdateIntervalMs = 50;
-      this.luminanceMaskLastUpdate = 0;
-      this.luminanceMaskCanvas = null;
-      this.luminanceMaskContext = null;
-      this.threeMaskedCanvas = null;
-      this.threeMaskedContext = null;
-      this.luminanceSourceCanvas = null;
-      this.lastMaskData = null;
-      this.maskDebugEnabled = false;
       this.lights = new Map();
       this.nextLightId = 1;
       this.animationId = null;
@@ -1469,59 +1456,6 @@
                 defaultValue: 'on'
               }
             }
-          },
-          {
-            opcode: 'enableLuminanceMask',
-            blockType: Scratch.BlockType.COMMAND,
-            text: '白(輝度)マスクで3Dを表示 [ENABLE]',
-            arguments: {
-              ENABLE: { type: Scratch.ArgumentType.STRING, menu: 'enableOptions', defaultValue: 'off' }
-            }
-          },
-          {
-            opcode: 'setLuminanceMaskThreshold',
-            blockType: Scratch.BlockType.COMMAND,
-            text: '白判定のしきい値(0~1)を [THRESHOLD] にする',
-            arguments: {
-              THRESHOLD: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0.8 }
-            }
-          },
-          {
-            opcode: 'setLuminanceMaskFeather',
-            blockType: Scratch.BlockType.COMMAND,
-            text: '境界のやわらかさ(0~1)を [FEATHER] にする',
-            arguments: {
-              FEATHER: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0.1 }
-            }
-          },
-          {
-            opcode: 'setLuminanceMaskUpdateInterval',
-            blockType: Scratch.BlockType.COMMAND,
-            text: '白判定の更新間隔(ms)を [INTERVAL] にする',
-            arguments: {
-              INTERVAL: { type: Scratch.ArgumentType.NUMBER, defaultValue: 50 }
-            }
-          },
-          {
-            opcode: 'debugMask',
-            blockType: Scratch.BlockType.COMMAND,
-            text: 'マスクデバッグ表示 [ENABLE]',
-            arguments: {
-              ENABLE: { type: Scratch.ArgumentType.STRING, menu: 'enableOptions', defaultValue: 'off' }
-            }
-          },
-          {
-            opcode: 'checkWhitePixels',
-            blockType: Scratch.BlockType.REPORTER,
-            text: '白ピクセルの割合(%) しきい値:[THRESHOLD]',
-            arguments: {
-              THRESHOLD: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0.7 }
-            }
-          },
-          {
-            opcode: 'debugSourceCanvas',
-            blockType: Scratch.BlockType.COMMAND,
-            text: '入力元キャンバスの情報をデバッグ表示'
           },
           '---',
           {
@@ -3429,14 +3363,6 @@
       this.renderer.domElement.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;pointer-events:none;z-index:0;';
       this.container.appendChild(this.renderer.domElement);
 
-      // マスク用オフスクリーンキャンバス
-      this.luminanceMaskCanvas = document.createElement('canvas');
-      this.luminanceMaskContext = this.luminanceMaskCanvas.getContext('2d', { willReadFrequently: true });
-
-      // 一時合成用キャンバス
-      this.threeMaskedCanvas = document.createElement('canvas');
-      this.threeMaskedContext = this.threeMaskedCanvas.getContext('2d');
-
       if (this.stageElement?.parentElement) {
         this.stageElement.parentElement.style.position = 'relative';
         this.stageElement.parentElement.appendChild(this.container);
@@ -3454,9 +3380,8 @@
 
       this.startImprovedSizeMonitoring();
 
-      // 即時入力元検索（旗連打対策）
+      // 即時サイズ同期（旗連打対策）
       setTimeout(() => {
-        this.findLuminanceSource();
         this.updateSizeAndPosition();
       }, 100);
 
@@ -3600,8 +3525,8 @@
         this.renderer.domElement.style.width = width + 'px';
         this.renderer.domElement.style.height = height + 'px';
 
-        // replacementCanvas / mask canvases のサイズ同期（liteから移植）
-        [this.replacementCanvas, this.luminanceMaskCanvas, this.threeMaskedCanvas, this.whiteLayerCanvas].forEach(c => {
+        // replacementCanvas / whiteLayerCanvas のサイズ同期
+        [this.replacementCanvas, this.whiteLayerCanvas].forEach(c => {
           if (c) {
             c.width = internalWidth;
             c.height = internalHeight;
@@ -3645,278 +3570,6 @@
                 this.container.style.zIndex = '0';
             }
         }
-      }
-    }
-
-    // ============================================
-    // liteから移植: ルミナンスソース検索・デバッグ系
-    // ============================================
-
-    findLuminanceSource() {
-      if (this.stageCanvas) {
-        this.luminanceSourceCanvas = this.stageCanvas;
-        console.log('Luminance source: stage canvas');
-        return;
-      }
-      
-      const canvases = Array.from(document.querySelectorAll('canvas')).filter(c => {
-        return c !== this.replacementCanvas && c !== this.renderer?.domElement;
-      });
-      
-      let webglCanvases = [];
-      let otherCanvases = [];
-      
-      for (const c of canvases) {
-        const rect = c.getBoundingClientRect();
-        if (rect.width < 100 || rect.height < 100) continue;
-        
-        const gl = c.getContext('webgl') || c.getContext('webgl2');
-        if (gl) {
-          webglCanvases.push({ canvas: c, area: rect.width * rect.height, info: 'WebGL' });
-        } else {
-          otherCanvases.push({ canvas: c, area: rect.width * rect.height, info: '2D' });
-        }
-      }
-      
-      webglCanvases.sort((a, b) => b.area - a.area);
-      otherCanvases.sort((a, b) => b.area - a.area);
-      
-      const candidates = [...webglCanvases, ...otherCanvases];
-      
-      if (candidates.length > 0) {
-        this.luminanceSourceCanvas = candidates[0].canvas;
-        console.log('Luminance source found:', candidates[0].info, 'area:', candidates[0].area);
-        this.debugCanvasInfo(candidates[0].canvas);
-      } else {
-        console.warn('No suitable canvas found');
-      }
-    }
-
-    refreshLuminanceSource() {
-      if (!this.luminanceSourceCanvas || !this.luminanceSourceCanvas.parentElement) {
-        this.findLuminanceSource();
-      }
-    }
-
-    debugCanvasInfo(canvas) {
-      try {
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        const width = canvas.width;
-        const height = canvas.height;
-        const sampleSize = 10;
-        const imgData = ctx.getImageData(0, 0, sampleSize, sampleSize);
-        const data = imgData.data;
-        console.log('=== Canvas Debug Info ===');
-        console.log('Canvas size:', width, 'x', height);
-        let whiteCount = 0, blackCount = 0, grayCount = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i], g = data[i+1], b = data[i+2];
-          if (r > 240 && g > 240 && b > 240) whiteCount++;
-          else if (r < 20 && g < 20 && b < 20) blackCount++;
-          else grayCount++;
-        }
-        let totalBrightness = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          totalBrightness += (data[i] + data[i+1] + data[i+2]) / 3;
-        }
-        console.log('White:', whiteCount, 'Black:', blackCount, 'Gray:', grayCount);
-        console.log('Average brightness:', (totalBrightness / (data.length / 4)).toFixed(2));
-      } catch (e) {
-        console.error('Canvas debug error:', e);
-      }
-    }
-
-    debugSourceCanvas() {
-      if (!this.luminanceSourceCanvas) this.findLuminanceSource();
-      if (this.luminanceSourceCanvas) {
-        this.debugCanvasInfo(this.luminanceSourceCanvas);
-      } else {
-        console.warn('No source canvas found for debugging');
-      }
-    }
-
-    // ============================================
-    // liteから移植: ルミナンスマスク制御ブロック
-    // ============================================
-
-    enableLuminanceMask(args) {
-      this.luminanceMaskEnabled = args.ENABLE === 'on';
-      this.lastMaskData = null;
-      this.luminanceMaskLastUpdate = 0;
-      
-      if (this.luminanceMaskEnabled) {
-        this.findLuminanceSource();
-        console.log('Luminance mask enabled, source:', this.luminanceSourceCanvas ? 'found' : 'not found');
-        if (this.luminanceSourceCanvas) this.debugCanvasInfo(this.luminanceSourceCanvas);
-      }
-      
-      if (this.container) {
-        if (this.luminanceMaskEnabled) {
-          this.container.style.filter = 'contrast(1.2) brightness(1.1)';
-          this.container.style.mixBlendMode = 'normal';
-          this.container.style.opacity = '1';
-        } else {
-          this.container.style.filter = 'none';
-          this.container.style.mixBlendMode = this.currentBlendMode;
-        }
-      }
-    }
-
-    setLuminanceMaskThreshold(args) {
-      this.luminanceMaskThreshold = Math.max(0, Math.min(1, Scratch.Cast.toNumber(args.THRESHOLD)));
-      this.luminanceMaskLastUpdate = 0;
-    }
-
-    setLuminanceMaskFeather(args) {
-      this.luminanceMaskFeather = Math.max(0, Math.min(1, Scratch.Cast.toNumber(args.FEATHER)));
-      this.luminanceMaskLastUpdate = 0;
-    }
-
-    setLuminanceMaskUpdateInterval(args) {
-      this.luminanceMaskUpdateIntervalMs = Math.max(10, Math.min(1000, Scratch.Cast.toNumber(args.INTERVAL)));
-      console.log('Mask update interval set to:', this.luminanceMaskUpdateIntervalMs, 'ms');
-    }
-
-    debugMask(args) {
-      this.maskDebugEnabled = args.ENABLE === 'on';
-      console.log('Mask debug:', this.maskDebugEnabled ? 'ON' : 'OFF');
-    }
-
-    // ============================================
-    // liteから移植: ルミナンスマスク処理
-    // ============================================
-
-    updateMask(width, height) {
-      if (!this.luminanceSourceCanvas) {
-        this.findLuminanceSource();
-        if (!this.luminanceSourceCanvas) return false;
-      }
-
-      const now = performance.now();
-      if (now - this.luminanceMaskLastUpdate < this.luminanceMaskUpdateIntervalMs) {
-        return !!this.lastMaskData;
-      }
-      
-      try {
-        if (this.luminanceMaskCanvas.width !== width || this.luminanceMaskCanvas.height !== height) {
-          this.luminanceMaskCanvas.width = width;
-          this.luminanceMaskCanvas.height = height;
-        }
-        
-        const ctx = this.luminanceMaskContext;
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(this.luminanceSourceCanvas, 0, 0, width, height);
-        
-        const imgData = ctx.getImageData(0, 0, width, height);
-        const data = imgData.data;
-        
-        const threshold = Math.max(0.1, Math.min(1, this.luminanceMaskThreshold));
-        const feather = Math.max(0.01, Math.min(0.5, this.luminanceMaskFeather));
-        
-        let maxLuminance = 0, sampleCount = 0, totalLuminance = 0;
-        const step = Math.max(1, Math.floor(Math.sqrt(data.length / 4 / 5000)));
-        
-        for (let i = 0; i < data.length; i += step * 4) {
-          const r = data[i], g = data[i+1], b = data[i+2];
-          const stdLum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-          const maxLum = Math.max(r, g, b);
-          const lum = (stdLum * 0.7 + maxLum * 0.3) / 255;
-          if (lum > maxLuminance) maxLuminance = lum;
-          totalLuminance += lum;
-          sampleCount++;
-        }
-        
-        const avgLuminance = totalLuminance / sampleCount;
-        const adaptiveThreshold = Math.min(threshold, Math.max(0.15, avgLuminance * 1.2));
-        const t0 = Math.max(0, adaptiveThreshold - feather);
-        const t1 = Math.min(1, adaptiveThreshold + feather);
-        
-        let whitePixelCount = 0, visiblePixelCount = 0;
-        
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i], g = data[i+1], b = data[i+2];
-          const stdLum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-          const maxLum = Math.max(r, g, b);
-          let lum = (stdLum * 0.6 + maxLum * 0.4) / 255;
-          lum = Math.pow(lum, 0.9);
-          
-          let alpha = 0;
-          if (lum >= t1) {
-            alpha = 1;
-          } else if (lum > t0) {
-            const t = (lum - t0) / (t1 - t0);
-            alpha = t * t * (3 - 2 * t);
-          }
-          if (alpha < 0.05) alpha = 0;
-          if (alpha > 0.95) alpha = 1;
-          
-          if (alpha > 0) visiblePixelCount++;
-          if (lum > 0.7) whitePixelCount++;
-          
-          data[i] = 255; data[i+1] = 255; data[i+2] = 255;
-          data[i+3] = Math.round(alpha * 255);
-        }
-        
-        const visibilityRatio = visiblePixelCount / (data.length / 4);
-        if (this.maskDebugEnabled) {
-          console.log('Mask stats:', {
-            threshold: adaptiveThreshold.toFixed(2), t0: t0.toFixed(2), t1: t1.toFixed(2),
-            maxLum: maxLuminance.toFixed(2), avgLum: avgLuminance.toFixed(2),
-            whitePixels: whitePixelCount, visibleRatio: (visibilityRatio * 100).toFixed(1) + '%'
-          });
-        }
-        
-        if (visibilityRatio < 0.005) {
-          if (this.maskDebugEnabled) console.warn('Mask is empty! Showing all.');
-          for (let i = 3; i < data.length; i += 4) data[i] = 255;
-        }
-        
-        ctx.putImageData(imgData, 0, 0);
-        this.lastMaskData = imgData;
-        this.luminanceMaskLastUpdate = now;
-        return true;
-        
-      } catch (e) {
-        console.error('Mask update error:', e);
-        return false;
-      }
-    }
-
-    checkWhitePixels(args) {
-      if (!this.luminanceSourceCanvas) {
-        this.findLuminanceSource();
-        if (!this.luminanceSourceCanvas) return 0;
-      }
-      
-      try {
-        const ctx = this.luminanceMaskContext;
-        const width = this.luminanceSourceCanvas.width;
-        const height = this.luminanceSourceCanvas.height;
-        
-        if (this.luminanceMaskCanvas.width !== width || this.luminanceMaskCanvas.height !== height) {
-          this.luminanceMaskCanvas.width = width;
-          this.luminanceMaskCanvas.height = height;
-        }
-        
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(this.luminanceSourceCanvas, 0, 0, width, height);
-        
-        const imgData = ctx.getImageData(0, 0, width, height);
-        const data = imgData.data;
-        const threshold = Math.max(0.1, Math.min(1, Scratch.Cast.toNumber(args.THRESHOLD || 0.7)));
-        
-        let whitePixelCount = 0;
-        const totalPixels = data.length / 4;
-        for (let i = 0; i < data.length; i += 4) {
-          const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
-          if (brightness > (threshold * 255)) whitePixelCount++;
-        }
-        return Math.round((whitePixelCount / totalPixels) * 100);
-        
-      } catch (e) {
-        console.error('White pixel check error:', e);
-        return 0;
       }
     }
 
@@ -4012,50 +3665,6 @@
       }
     }
 
-    renderMasked() {
-      if (!this.replacementContext || !this.replacementCanvas) return;
-      
-      const w = this.replacementCanvas.width;
-      const h = this.replacementCanvas.height;
-      if (!w || !h) return;
-
-      const threeCanvas = this.renderer.domElement;
-      const maskOk = this.updateMask(w, h);
-      
-      if (!maskOk || !this.luminanceMaskCanvas) {
-        this.replacementContext.clearRect(0, 0, w, h);
-        this.replacementContext.drawImage(threeCanvas, 0, 0, w, h);
-        return;
-      }
-      
-      if (!this.threeMaskedCanvas || this.threeMaskedCanvas.width !== w || this.threeMaskedCanvas.height !== h) {
-        this.threeMaskedCanvas.width = w;
-        this.threeMaskedCanvas.height = h;
-        this.threeMaskedContext = this.threeMaskedCanvas.getContext('2d');
-      }
-      
-      const tempCtx = this.threeMaskedContext;
-      tempCtx.clearRect(0, 0, w, h);
-      tempCtx.drawImage(threeCanvas, 0, 0, w, h);
-      tempCtx.globalCompositeOperation = 'destination-in';
-      tempCtx.drawImage(this.luminanceMaskCanvas, 0, 0, w, h);
-      tempCtx.globalCompositeOperation = 'source-over';
-      
-      this.replacementContext.clearRect(0, 0, w, h);
-      
-      if (this.maskDebugEnabled) {
-        this.replacementContext.drawImage(this.threeMaskedCanvas, 0, 0, w, h);
-        this.replacementContext.fillStyle = 'rgba(255, 0, 0, 0.1)';
-        this.replacementContext.fillRect(0, 0, w, h);
-        this.replacementContext.strokeStyle = 'yellow';
-        this.replacementContext.lineWidth = 1;
-        this.replacementContext.strokeRect(w - w/4, 0, w/4, h/4);
-        this.replacementContext.drawImage(this.luminanceMaskCanvas, w - w/4, 0, w/4, h/4);
-      } else {
-        this.replacementContext.drawImage(this.threeMaskedCanvas, 0, 0, w, h);
-      }
-    }
-
     animate(now) {
       if (!this.isInitialized || !this.enable3D) return;
 
@@ -4109,11 +3718,9 @@
 
       this.renderer.render(this.scene, this.camera);
 
-      // replacementCanvasに転写（liteから移植: blend modeとルミナンスマスクに対応）
+      // replacementCanvasに転写（blend modeに対応）
       if (this.replacementContext && this.replacementCanvas) {
-        if (this.luminanceMaskEnabled) {
-          this.renderMasked();
-        } else if (this.renderOrder === 'behind') {
+        if (this.renderOrder === 'behind') {
           // clearColorパッチ方式: Scratch canvas が透明になっているので
           // replacementCanvas には 3D だけ描けばよい
           const w = this.replacementCanvas.width;
@@ -4751,9 +4358,8 @@
       };
       
       this.currentBlendMode = blendModeMap[mode] || 'normal';
-      // liteから移植: luminanceMaskが有効な場合はnormalを維持
       if (this.container) {
-        this.container.style.mixBlendMode = this.luminanceMaskEnabled ? 'normal' : this.currentBlendMode;
+        this.container.style.mixBlendMode = this.currentBlendMode;
       }
     }
 
@@ -5117,11 +4723,18 @@
         // セミオート用シフトアップ/ダウン待機
         _shiftUpPrev: false,
         _shiftDownPrev: false,
-        manualShift: true,     // Q/E・パッドLB/RBでのシフトはデフォルト無効（shiftGearブロック使用時のみ）
-        _input: { accel: 0, brake: 0, steer: 0 },  // ブロック入力（毎フレームリセット）
-        lowSpeedTurnBoost: 3,  // 低速時の旋回倍率（デフォルト3倍）
-        brakePower: 15,        // ブレーキ力（デフォルト15）
+        manualShift: true,
+        _input: { accel: 0, brake: 0, steer: 0 },
+        lowSpeedTurnBoost: 3,
+        brakePower: 15,
+        _velY: 0,  // 自前管理するY速度
       });
+
+      // 車のrigidbodyの重力をオフ（Y速度を自前で管理して壁反発を制御する）
+      const physicsData = this.physicsBodies.get(id);
+      if (physicsData?.rigidBody) {
+        physicsData.rigidBody.setGravityScale(0.0, true);
+      }
 
       console.log(`Car controller set on object ${id}: ${maxGears} gears, mode=${gearMode}`);
     }
@@ -5434,27 +5047,10 @@
       window.addEventListener('keyup',   e => { this._keys[e.code] = false; });
       this._keysTracked = true;
 
-      // ゲームパッド入力は _getGamepadAxis / _getGamepadButton で毎フレーム取得
     }
 
     _isKeyDown(code) {
       return !!(this._keys && this._keys[code]);
-    }
-
-    // ゲームパッドのアナログ軸 (0=左スティックX, etc.)
-    _getGamepadAxis(padIndex, axisIndex) {
-      const gps = navigator.getGamepads ? navigator.getGamepads() : [];
-      const gp = gps[padIndex];
-      if (!gp) return 0;
-      return gp.axes[axisIndex] || 0;
-    }
-
-    // ゲームパッドのボタン値 (analog: 0~1)
-    _getGamepadButton(padIndex, btnIndex) {
-      const gps = navigator.getGamepads ? navigator.getGamepads() : [];
-      const gp = gps[padIndex];
-      if (!gp || !gp.buttons[btnIndex]) return 0;
-      return gp.buttons[btnIndex].value;
     }
 
     _updateAllCars(dt) {
@@ -5465,34 +5061,17 @@
         if (!obj) continue;
         const physicsData = this.physicsBodies.get(id);
 
-        // --- ブロック入力（矢印キーの代わり）---
+        // --- ブロック入力のみ（全入力はコード側で制御）---
         const blockAccel = car._input ? car._input.accel : 0;
         const blockBrake = car._input ? car._input.brake : 0;
         const blockSteer = car._input ? car._input.steer : 0;
-        // セミオート: Q=シフトアップ、E=シフトダウン（↑↓はアクセル/ブレーキと兼用なので別キー）
-        const shiftUpKey = false;
-        const shiftDnKey = false;
 
-        // --- ゲームパッド入力（パッド0番） ---
-        const padAccel  = this._getGamepadButton(0, 7);  // RT
-        const padBrake  = this._getGamepadButton(0, 6);  // LT
-        const padSteer  = this._getGamepadAxis(0, 0);    // 左スティックX
-        const padShiftUp = this._getGamepadButton(0, 5) > 0.5; // RB
-        const padShiftDn = this._getGamepadButton(0, 4) > 0.5; // LB
-
-        // ブロック入力とパッド入力を合成
-        const accelInput = blockAccel + padAccel;
-        const brakeInput = blockBrake + padBrake;
-        const accelClamped = Math.min(accelInput, 1);
-        const brakeClamped = Math.min(brakeInput, 1);
+        const accelClamped = Math.min(blockAccel, 1);
+        const brakeClamped = Math.min(blockBrake, 1);
 
         // --- ステアリング ---
-        let steerInput = blockSteer;
-        // パッドが優先（デッドゾーン0.1）
-        if (Math.abs(padSteer) > 0.1) steerInput = padSteer;
+        const steerInput = blockSteer;
 
-        // フレーム終了時にブロック入力をリセット（毎フレーム明示的にセットが必要）
-        if (car._input) { car._input.accel = 0; car._input.brake = 0; car._input.steer = 0; }
 
         // ステアリングを滑らかに変化・センタリング（dt正規化）
         const steerRate = car.steerSpeed * dt * 60;
@@ -5508,7 +5087,13 @@
         // --- 速度計算 ---
         // ニュートラル(gear=0)は駆動力なし・RPMのみアクセルに反応
         if (car.gear === 0) {
-          car.rpm = accelClamped * car.rpmLimit;
+          const targetRpm = accelClamped * car.rpmLimit;
+          const followSpeed = targetRpm > (car.rpm || 0) ? 4 : 1.5; // 上がりは速く、下がりはゆっくり
+          car.rpm = (car.rpm || 0) + (targetRpm - (car.rpm || 0)) * Math.min(dt * followSpeed, 1);
+          // レブリミッター：上限付近で少し落とす
+          if (car.rpm > car.rpmLimit * 0.95) {
+            car.rpm = car.rpmLimit * 0.95 + Math.sin(Date.now() * 0.02) * car.rpmLimit * 0.03;
+          }
           // ブレーキは効く、自然減衰のみ
           const brakeForce = (car.brakePower ?? 15) * brakeClamped * dt;
           if (car.speed > 0) car.speed = Math.max(0, car.speed - brakeForce);
@@ -5582,10 +5167,10 @@
             }
           }
         } else {
-          // manualShift=true のときはキー/パッド入力を無視
+          // manualShift=true のときはブロック入力を無視
           if (!car.manualShift) {
-            const shiftUpNow  = shiftUpKey || padShiftUp;
-            const shiftDnNow  = shiftDnKey || padShiftDn;
+            const shiftUpNow  = false;
+            const shiftDnNow  = false;
             if (shiftUpNow && !car._shiftUpPrev && car.gear < car.maxGears) {
               car.gear++;
               const newLimit = car.gearSpeedLimits[car.gear - 1];
@@ -5645,7 +5230,6 @@
 
           // --- レイキャストサスペンション（WheelCollider相当） ---
           // 車体の4隅から真下にレイを飛ばし、地面との距離でY速度を補正する
-          let suspensionY = currentVel.y;
           let groundNormal = new THREE.Vector3(0, 1, 0); // デフォルトは水平
           if (this.world && this.RAPIER) {
             const bodyPos   = physicsData.rigidBody.translation();
@@ -5712,16 +5296,24 @@
               }
             }
 
-            if (hitCount > 0) {
-              const avgPush = totalPush / hitCount;
-              suspensionY = currentVel.y + avgPush * dt;
-              suspensionY = Math.max(-15, Math.min(8, suspensionY));
-              // 法線平均を正規化→地面の傾き方向
-              groundNormal = normalSum.divideScalar(hitCount).normalize();
-            }
-          }
+          // --- Y速度を自前管理（重力オフの代わりに手動で重力・サスペンション適用）---
+          const gravity = this.world?.gravity?.y ?? -9.82;
+          let velY = car._velY ?? 0;
 
-          physicsData.rigidBody.setLinvel({ x: vx, y: suspensionY, z: vz }, true);
+          if (hitCount > 0) {
+            // 接地中：サスペンションのみ、壁反発は無視
+            const avgPush = totalPush / hitCount;
+            velY += avgPush * dt;
+            velY = Math.max(-15, Math.min(4, velY)); // 接地中は上昇を4m/sまでに抑える
+            groundNormal = normalSum.divideScalar(hitCount).normalize();
+          } else {
+            // 空中：重力のみ加算（ジャンプ・バンク頂点など）
+            velY += gravity * dt;
+            velY = Math.max(-20, velY);
+          }
+          car._velY = velY;
+
+          physicsData.rigidBody.setLinvel({ x: vx, y: velY, z: vz }, true);
 
           // THREE の向きを Rapier に書き込む（物理がヨーを上書きしないよう）
           physicsData.rigidBody.setRotation(
